@@ -226,6 +226,45 @@
   .bar-trail{position:absolute;left:0;top:0;height:100%;background:#ffd36b;opacity:.9;transition:width .9s ease .35s;}
   .bar .bar-fill{position:relative;z-index:1;}
   .stage-avatar svg{shape-rendering:geometricPrecision;}
+
+  /* ---------- camera, poses, cinematics, damage ---------- */
+  .cam{position:absolute;inset:0;transform-origin:50% 80%;transition:transform .6s cubic-bezier(.3,.7,.3,1);will-change:transform;}
+  .snd-btn{right:64px;}
+  .decals{position:absolute;inset:0;pointer-events:none;}
+  .decal{position:absolute;animation:decalIn .35s ease-out both;}
+  .decal svg{width:100%;height:100%;display:block;overflow:visible;}
+  @keyframes decalIn{from{opacity:0;transform:scale(.3);}to{opacity:1;transform:scale(1);}}
+  .ghost{position:absolute;z-index:4;pointer-events:none;mix-blend-mode:screen;filter:brightness(1.7) saturate(1.5) drop-shadow(0 0 8px currentColor);}
+  .ghost svg{width:100%;height:100%;display:block;overflow:visible;}
+  .stage-avatar svg.dmg-ov{position:absolute;left:0;top:0;pointer-events:none;}
+  .pose-kick .leg-f{transform-origin:61px 98px;animation:kickOut .3s ease-out both;}
+  @keyframes kickOut{from{transform:rotate(0);}to{transform:rotate(-78deg);}}
+  .pose-kick .whole{transform-origin:50px 150px;transform:rotate(7deg);}
+  .pose-uppercut .arm-f{display:none;}
+  .pose-uppercut .arm-fx{display:inline;transform-origin:76px 57px;animation:upperCut .3s cubic-bezier(.2,.9,.3,1) both;}
+  @keyframes upperCut{from{transform:rotate(55deg) scaleX(.5);}to{transform:rotate(-62deg) scaleX(1);}}
+  .pose-uppercut .whole{transform-origin:50px 150px;transform:translateY(-3px) rotate(-3deg);}
+  .pose-block .arm-f,.pose-block .arm-b{display:none;}
+  .pose-block .arm-bx,.pose-block .arm-fx2{display:inline;transform-origin:50px 60px;transform:scaleX(.4) translateY(-6px);}
+  .pose-block .whole{transform-origin:50px 150px;transform:rotate(-4deg);}
+  .pose-dash .whole{transform-origin:50px 150px;transform:skewX(-12deg) rotate(6deg);}
+  .cine-dim{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:0;transition:opacity .3s;
+    background:radial-gradient(ellipse at 35% 55%,rgba(0,0,0,.25),rgba(0,0,0,.82));}
+  .cine-dim.on{opacity:1;}
+  .cine{position:absolute;inset:0;z-index:9;pointer-events:none;overflow:hidden;}
+  .cine-band{position:absolute;left:0;right:0;top:18%;height:38%;display:flex;align-items:center;gap:3%;padding:0 5%;
+    background:linear-gradient(90deg,rgba(0,0,0,.88),rgba(0,0,0,.6) 65%,transparent);
+    border-top:2px solid currentColor;border-bottom:2px solid currentColor;box-shadow:0 0 30px currentColor;
+    animation:cineIn .35s cubic-bezier(.2,.9,.3,1) both;}
+  .cine-band.out{animation:cineOut .3s ease-in both;}
+  @keyframes cineIn{from{transform:translateX(-110%);}to{transform:translateX(0);}}
+  @keyframes cineOut{from{transform:translateX(0);opacity:1;}to{transform:translateX(60%);opacity:0;}}
+  .cine-face{height:150%;aspect-ratio:1;margin-top:-6%;border-radius:50%;overflow:hidden;border:3px solid currentColor;background:#0b0d1c;box-shadow:0 0 24px currentColor;flex:none;}
+  .cine-face svg{width:100%;height:100%;display:block;}
+  .cine-text small{display:block;font-size:clamp(.7rem,1.6vw,1rem);letter-spacing:3px;color:#fff;opacity:.8;}
+  .cine-text b{display:block;font-size:clamp(1.3rem,4.4vw,3.2rem);font-weight:900;font-style:italic;letter-spacing:2px;color:#fff;text-shadow:0 0 18px currentColor,0 0 4px #000;}
+  .xform-fx{position:absolute;inset:0;z-index:6;pointer-events:none;overflow:hidden;}
+  .pillar{position:absolute;top:0;bottom:0;transform-origin:50% 100%;mix-blend-mode:screen;filter:blur(2px);}
   @media (prefers-reduced-motion:reduce){.torso,.head,.pose-charge .whole{animation:none;}}
   .stage-aura{position:absolute;bottom:0;width:calc(var(--fh) * .95);height:calc(var(--fh) * 1.15);border-radius:50%;z-index:1;
     opacity:0;transition:opacity .4s;pointer-events:none;
@@ -327,6 +366,7 @@
       <div class="joy-knob" id="joy-knob"></div>
     </div>
   </div>
+  <button class="fs-btn snd-btn" id="snd-btn" onclick="toggleSound()" title="Sound on/off" aria-label="Toggle sound">🔊</button>
   <button class="fs-btn" id="fs-btn" onclick="toggleFullscreen()" title="Toggle fullscreen" aria-label="Toggle fullscreen">⛶</button>
 
   <!-- TITLE -->
@@ -364,20 +404,26 @@
   <div class="screen" id="battle-screen">
     <div class="arena" id="arena">
       <div class="stage" id="stage">
+        <div class="cam" id="cam">
         <div class="scene" id="scene"></div>
+        <div class="decals" id="decals"></div>
         <div class="stage-fighter" id="p-stage">
           <div class="stage-aura" id="p-aura"></div>
           <div class="stage-avatar" id="p-avatar"></div>
           <div class="stage-shadow"></div>
         </div>
         <div class="clash-fx" id="clash-fx"></div>
-        <canvas id="fx"></canvas>
         <div class="stage-fighter enemy-side" id="e-stage">
           <div class="stage-aura" id="e-aura"></div>
           <div class="stage-avatar" id="e-avatar"></div>
           <div class="stage-shadow"></div>
         </div>
+        </div>
+        <canvas id="fx"></canvas>
         <div class="stage-tint" id="stage-tint"></div>
+        <div class="cine-dim" id="cine-dim"></div>
+        <div class="cine" id="cine"></div>
+        <div class="xform-fx" id="xform-fx"></div>
         <div class="action-caption" id="action-caption"></div>
       </div>
       <div class="controls-hint" id="controls-hint"><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> move · <kbd>Q</kbd> strike · <kbd>W</kbd> ki blast · <kbd>E</kbd> focus ki · <kbd>R</kbd> dodge (in the air) · <kbd>F</kbd> ultimate</div>
@@ -902,6 +948,7 @@ function goTo(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if(document.body) document.body.classList.toggle('in-battle', id==='battle-screen');
+  if(typeof musicSet==='function') musicSet(id==='battle-screen' ? 1 : id==='end-screen' ? -1 : 0);
 }
 function showHowTo(){
   const el = document.getElementById('howto');
@@ -975,6 +1022,10 @@ function setupBattle(){
   const ch = CHAPTERS[state.chapterIndex];
   state.turnLock = false; // safety: never let a stuck lock carry into a new fight
   state.phase = 'battle';
+  state.holdArt = {}; state.holdEnemyHp = null;
+  clearDecals(); camRelease();
+  { const c=document.getElementById('cine'), d=document.getElementById('cine-dim'); if(c){c.classList.remove('on');c.innerHTML='';} if(d) d.classList.remove('on'); }
+  delete document.getElementById('p-avatar').dataset.dmg; delete document.getElementById('e-avatar').dataset.dmg;
   state.pos = {x:0.45, y:0}; state.flyTarget = null; state.lastBand = null; state.flyHintShown = false;
   clearMoveInput();
 
@@ -1040,6 +1091,8 @@ function renderBattle(){
   const eForm = currentEnemyForm();
   const pLook = lookFor(state.player.def, pForm);
   const eLook = lookFor(state.enemy.def, eForm);
+  const eHpShown = (state.holdEnemyHp!=null) ? state.holdEnemyHp : state.enemy.hp;
+  const hold = state.holdArt || {};
 
   document.getElementById('p-name').textContent = state.player.def.name;
   document.getElementById('p-form').textContent = pForm.name;
@@ -1047,7 +1100,7 @@ function renderBattle(){
   updatePowerBadge();
   document.getElementById('p-stage').classList.toggle('flying', !!state.player.flying);
   const pPort = document.getElementById('p-portrait');
-  if(pPort.dataset.form !== pForm.name){
+  if(pPort.dataset.form !== pForm.name && !hold.player){
     pPort.innerHTML = fighterBustSVG(pLook);
     pPort.dataset.form = pForm.name;
   }
@@ -1077,15 +1130,15 @@ function renderBattle(){
   document.getElementById('e-form').textContent = eForm.name;
   document.getElementById('e-form').style.color = eForm.color;
   const ePort = document.getElementById('e-portrait');
-  if(ePort.dataset.form !== eForm.name){
+  if(ePort.dataset.form !== eForm.name && !hold.enemy){
     ePort.innerHTML = fighterBustSVG(eLook);
     ePort.dataset.form = eForm.name;
   }
   ePort.style.borderColor = eForm.threshold>0 ? eForm.color : 'rgba(255,255,255,.15)';
   ePort.classList.toggle('glow', eForm.threshold>0);
 
-  document.getElementById('e-hp-txt').textContent = `${Math.max(0,Math.round(state.enemy.hp))}/${state.enemy.maxHp}`;
-  const eHpPct = Math.max(0,state.enemy.hp/state.enemy.maxHp*100);
+  document.getElementById('e-hp-txt').textContent = `${Math.max(0,Math.round(eHpShown))}/${state.enemy.maxHp}`;
+  const eHpPct = Math.max(0,eHpShown/state.enemy.maxHp*100);
   const eHpBar = document.getElementById('e-hp-bar');
   eHpBar.style.width = eHpPct+'%'; document.getElementById('e-hp-trail').style.width = eHpPct+'%';
   eHpBar.classList.toggle('low', eHpPct<30);
@@ -1095,7 +1148,8 @@ function renderBattle(){
 
   // sync the visual stage avatars (full-body art)
   const pAvatar = document.getElementById('p-avatar');
-  if(pAvatar.dataset.form !== pForm.name){
+  if(pAvatar.dataset.form !== pForm.name && !hold.player){
+    delete pAvatar.dataset.dmg;
     pAvatar.innerHTML = fighterSVG(pLook);
     pAvatar.dataset.form = pForm.name;
   }
@@ -1104,13 +1158,17 @@ function renderBattle(){
   pAura.classList.toggle('on', pForm.threshold>0);
 
   const eAvatar = document.getElementById('e-avatar');
-  if(eAvatar.dataset.form !== eForm.name){
+  if(eAvatar.dataset.form !== eForm.name && !hold.enemy){
+    delete eAvatar.dataset.dmg;
     eAvatar.innerHTML = fighterSVG(eLook);
     eAvatar.dataset.form = eForm.name;
   }
   const eAura = document.getElementById('e-aura');
   eAura.style.color = eForm.color;
   eAura.classList.toggle('on', eForm.threshold>0);
+  ensureDamage('p-avatar', pLook, pHpPct);
+  ensureDamage('e-avatar', eLook, eHpPct);
+  updateMusicForBattle();
 }
 
 /* ---------- Stage animation helpers ---------- */
@@ -1144,6 +1202,7 @@ function popDamage(targetSide, text, kind){
   setTimeout(()=>el.remove(), 1000);
 }
 function dodgeFx(){
+  setPose('player','dash',450); afterimages('player',4,'#7fd6ff'); sfx('dodge');
   const av = document.getElementById('p-avatar');
   av.classList.remove('dodging'); void av.offsetWidth; av.classList.add('dodging');
   setTimeout(()=>av.classList.remove('dodging'), 650);
@@ -1154,6 +1213,8 @@ function hitFlash(targetSide, big){
   setTimeout(()=>av.classList.remove('hit'), 400);
   setPose(targetSide,'hit',420);
   impactFx(targetSide, big);
+  sfx(big ? 'heavy' : 'hit'); camPunch(big ? .07 : .025);
+  if(big) addDecal(targetSide,'crater'); else if(Math.random() < .3) addDecal(targetSide,'scorch');
 }
 function lunge(attackerSide){
   const stage = document.getElementById('stage');
@@ -1172,7 +1233,16 @@ function lunge(attackerSide){
   const cls = attackerSide==='player' ? 'attack-right' : 'attack-left';
   el.classList.remove('attack-right','attack-left'); void el.offsetWidth; el.classList.add(cls);
   setTimeout(()=>el.classList.remove(cls), 500);
-  setPose(attackerSide,'punch',420);
+  const flyer = attackerSide==='player' && state.player && state.player.flying;
+  const styles = flyer ? ['kick'] : ['punch','kick','uppercut'];
+  lunge._last = lunge._last || {};
+  let st = styles[Math.floor(Math.random()*styles.length)];
+  if(styles.length>1 && st===lunge._last[attackerSide]) st = styles[(styles.indexOf(st)+1)%styles.length];
+  lunge._last[attackerSide] = st;
+  setPose(attackerSide, st, 460);
+  afterimages(attackerSide, 3, attackerSide==='player' ? '#ffd36b' : '#ff6b6b');
+  sfx('whoosh');
+  return st;
 }
 function fireOrb(attackerSide, big){
   const stage = document.getElementById('stage');
@@ -1184,7 +1254,8 @@ function fireOrb(attackerSide, big){
   orb.style.top = (from.y - 14)+'px';
   stage.appendChild(orb);
   setPose(attackerSide,'blast',560);
-  fxBeam(from, to, beamColor(attackerSide), big?620:450, big?15:7);
+  fxBeam(from, to, beamColor(attackerSide), big?620:450, big?30:7);
+  if(!big) sfx('blast');
   if(big) orb.style.transform='scale(1.8)';
   if(orb.animate){
     orb.animate(
@@ -1306,6 +1377,294 @@ function setPose(side, pose, ms){
   clearTimeout(av._poseT); av._poseT=setTimeout(()=>av.classList.remove('pose-'+pose), ms);
 }
 
+
+/* ============================= MOVE SET, CAMERA, CINEMATICS, DAMAGE, AUDIO ============================= */
+
+/* ---------- afterimages (ghost trails) ---------- */
+function afterimages(side, n, color){
+  const stage = document.getElementById('stage');
+  const av = document.getElementById(side==='player'?'p-avatar':'e-avatar');
+  const svg = av.querySelector('svg.fig'); if(!svg) return;
+  const s = stage.getBoundingClientRect(), a = av.getBoundingClientRect();
+  const dir = side==='player' ? -1 : 1;
+  for(let i=0;i<n;i++){
+    const g = document.createElement('div'); g.className = 'ghost';
+    g.style.cssText = `left:${a.left-s.left}px;top:${a.top-s.top}px;width:${a.width}px;height:${a.height}px;color:${color||'#7fd6ff'};`;
+    const c = svg.cloneNode(true);
+    c.style.transform = side==='enemy' ? 'scaleX(-1)' : '';
+    c.style.animation = 'none';
+    g.appendChild(c); stage.appendChild(g);
+    const dur = 360 + i*90, delay = i*50;
+    if(g.animate) g.animate([{opacity:.6, transform:'translateX(0)'},{opacity:0, transform:`translateX(${dir*(18+i*24)}px)`}], {duration:dur, delay, easing:'ease-out', fill:'both'});
+    setTimeout(()=>g.remove(), dur + delay + 80);
+  }
+}
+
+/* ---------- camera ---------- */
+const CAM = {lock:false, key:null};
+function camEl(){ return document.getElementById('cam'); }
+function camSet(zoom, ox, oy, ms){
+  const c = camEl(); if(!c) return;
+  c.style.transitionDuration = (ms==null?600:ms)+'ms';
+  c.style.transformOrigin = `${ox}% ${oy}%`;
+  c.style.transform = `scale(${zoom})`;
+}
+function camAuto(){
+  if(CAM.lock || !state.player) return;
+  const y = state.pos ? state.pos.y : 0;
+  const z = +(1 - .09*y + (rangeBand()==='Close' ? .04 : 0)).toFixed(3);
+  const oy = +(80 - y*22).toFixed(1);
+  const key = z+'|'+oy; if(key===CAM.key) return; CAM.key = key;
+  camSet(z, 50, oy, 260);
+}
+function centerPct(side){
+  const st = document.getElementById('stage'), el = document.getElementById(side==='player'?'p-stage':'e-stage');
+  return { x:(el.offsetLeft+el.offsetWidth/2)/Math.max(1,st.clientWidth)*100, y:(el.offsetTop+el.offsetHeight*.45)/Math.max(1,st.clientHeight)*100 };
+}
+function camFocus(side, zoom, ms){ CAM.lock = true; CAM.key = null; const c = centerPct(side); camSet(zoom, c.x, c.y, ms); }
+function camMid(zoom, ms){ CAM.lock = true; CAM.key = null; const a = centerPct('player'), b = centerPct('enemy'); camSet(zoom, (a.x+b.x)/2, (a.y+b.y)/2, ms); }
+function camRelease(){ CAM.lock = false; CAM.key = null; camAuto(); if(!state.player) camSet(1,50,80,300); }
+function camPunch(a){ const c = camEl(); if(c && c.animate) c.animate([{scale:1},{scale:1+a, offset:.25},{scale:1}], {duration:300, easing:'ease-out'}); }
+
+/* ---------- ground damage: craters, cracks, scorch marks ---------- */
+function decalSVG(kind){
+  let cracks = '';
+  const nC = kind==='crack' ? 11 : kind==='crater' ? 8 : 0;
+  for(let i=0;i<nC;i++){
+    const a = (i/nC)*Math.PI*2 + Math.random()*.5, r0 = kind==='crack' ? 6 : 52, len = kind==='crack' ? 70+Math.random()*28 : 30+Math.random()*26;
+    let x = 100 + Math.cos(a)*r0, y = 25 + Math.sin(a)*r0*.3, d = `M${x.toFixed(1)},${y.toFixed(1)}`;
+    for(let k=0;k<4;k++){ const aa = a + (Math.random()-.5)*.7, step = len/4; x += Math.cos(aa)*step; y += Math.sin(aa)*step*.3; d += ` L${x.toFixed(1)},${y.toFixed(1)}`; }
+    cracks += `<path d="${d}" fill="none" stroke="#080504" stroke-width="${(1.2+Math.random()*1.4).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  if(kind==='scorch') return `<svg viewBox="0 0 200 50" preserveAspectRatio="none"><ellipse cx="100" cy="26" rx="90" ry="17" fill="#000" opacity=".28"/><ellipse cx="100" cy="26" rx="52" ry="9" fill="#000" opacity=".35"/></svg>`;
+  if(kind==='crack') return `<svg viewBox="0 0 200 50" preserveAspectRatio="none"><ellipse cx="100" cy="26" rx="95" ry="14" fill="#000" opacity=".16"/>${cracks}</svg>`;
+  return `<svg viewBox="0 0 200 50" preserveAspectRatio="none"><ellipse cx="100" cy="28" rx="96" ry="20" fill="#000" opacity=".3"/><ellipse cx="100" cy="25" rx="80" ry="16" fill="#1a110f" opacity=".8"/><ellipse cx="100" cy="23" rx="80" ry="16" fill="none" stroke="rgba(255,190,120,.4)" stroke-width="1.6"/><ellipse cx="100" cy="27" rx="54" ry="9" fill="#090504" opacity=".75"/>${cracks}</svg>`;
+}
+function addDecal(side, kind){
+  const box = document.getElementById('decals'); if(!box) return;
+  const fe = document.getElementById(side==='player'?'p-stage':'e-stage'), ee = document.getElementById('e-stage');
+  const cx = fe.offsetLeft + fe.offsetWidth/2, gy = ee.offsetTop + ee.offsetHeight - 8;
+  const w = Math.round(fe.offsetWidth * (kind==='crater' ? 1.7 : kind==='crack' ? 2.2 : .85)), h = Math.round(w * (kind==='crack' ? .2 : .26));
+  const d = document.createElement('div'); d.className = 'decal ' + kind;
+  d.style.cssText = `left:${cx-w/2}px;top:${gy-h/2}px;width:${w}px;height:${h}px;`;
+  d.innerHTML = decalSVG(kind);
+  box.appendChild(d);
+  while(box.children.length > 9) box.firstChild.remove();
+}
+function clearDecals(){ const b = document.getElementById('decals'); if(b) b.innerHTML = ''; }
+
+/* ---------- visible fighter damage: scratches, bruises, torn clothing, cracked armour ---------- */
+function damageSVG(lvl, o){
+  const skin = o.skin || '#f0b78c', sd = shade(skin,-.32), sdd = shade(skin,-.58);
+  const bare = (o.suit==='bare'), saiyan = (o.suit==='saiyan'), bulk = o.bulk || 1;
+  const cut = '#8a2b2b';
+  const face = `<path d="M57,21 l4,6 M59,20 l3,6" stroke="${cut}" stroke-width=".9" stroke-linecap="round" fill="none" opacity=".85"/>
+    <ellipse cx="41.5" cy="31" rx="3.2" ry="2" fill="#5a2f6a" opacity=".32"/>`
+    + (lvl>=2 ? `<path d="M44,36 l3,-1 M47,38 l4,0" stroke="${cut}" stroke-width=".8" stroke-linecap="round" opacity=".8"/><path d="M52,10 l-1,5" stroke="${cut}" stroke-width="1" opacity=".7"/>` : '')
+    + (lvl>=3 ? `<ellipse cx="58.5" cy="31" rx="3" ry="2" fill="#5a2f6a" opacity=".38"/><path d="M45,41 q1,3 0,5" stroke="${cut}" stroke-width="1" fill="none" opacity=".8"/>` : '');
+  let body = `<ellipse cx="38" cy="78" rx="7" ry="4" fill="#000" opacity=".16"/><ellipse cx="62" cy="64" rx="5" ry="3" fill="#000" opacity=".14"/>
+    <path d="M18,76 l4,3 M20,72 l5,3" stroke="${cut}" stroke-width=".9" stroke-linecap="round" opacity=".8"/>`;
+  const tear = (d)=>`<path d="${d}" fill="${sd}" stroke="${sdd}" stroke-width=".9" stroke-linejoin="round"/>`;
+  if(lvl>=2){
+    if(bare){
+      body += `<path d="M40,60 l4,6 -3,4 5,7" fill="none" stroke="${sdd}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" opacity=".8"/><path d="M62,70 l-4,5 3,4" fill="none" stroke="${sdd}" stroke-width="1.2" stroke-linecap="round" opacity=".8"/>`;
+    } else {
+      body += tear('M20,55 L27,51 L25,57 L31,60 L26,63 L29,69 L21,64 Z');
+      body += tear('M35,61 L40,58 L43,66 L41,68 L47,76 L42,77 L45,85 L38,78 L40,73 L35,67 Z');
+      if(saiyan) body += `<path d="M34,56 l6,8 -3,5 5,6" fill="none" stroke="#000" stroke-width="1" opacity=".55"/>`;
+    }
+  }
+  if(lvl>=3){
+    if(bare){
+      body += `<path d="M34,82 l5,-4 -1,-5 6,-3" fill="none" stroke="${sdd}" stroke-width="1.4" stroke-linecap="round" opacity=".85"/><ellipse cx="50" cy="70" rx="12" ry="9" fill="#5a1010" opacity=".14"/>`;
+    } else {
+      body += tear('M60,60 L66,57 L65,64 L70,68 L64,70 L66,77 L59,70 Z');
+      body += tear('M31,112 L39,109 L38,115 L43,118 L34,120 Z');
+      body += tear('M65,108 L72,105 L71,112 L76,114 L68,117 Z');
+      body += `<path d="M30,120 l3,4 M36,121 l2,5 M66,117 l3,4" stroke="${shade(o.outfit||'#888',-.4)}" stroke-width="1.2" stroke-linecap="round"/>`;
+    }
+    body += `<ellipse cx="50" cy="84" rx="14" ry="6" fill="#000" opacity=".12"/>`;
+  }
+  const bt = bulk!==1 ? ` transform="translate(50 0) scale(${bulk} 1) translate(-50 0)"` : '';
+  return `<svg class="dmg-ov" viewBox="0 -16 100 176" xmlns="http://www.w3.org/2000/svg" overflow="visible"><g${bt}>${body}</g>${face}</svg>`;
+}
+function ensureDamage(avId, look, hpPct){
+  const av = document.getElementById(avId); if(!av) return;
+  const lvl = hpPct < 20 ? 3 : hpPct < 42 ? 2 : hpPct < 72 ? 1 : 0;
+  const key = (av.dataset.form||'') + '|' + lvl;
+  if(av.dataset.dmg === key) return;
+  av.dataset.dmg = key;
+  const old = av.querySelector('.dmg-ov'); if(old) old.remove();
+  if(lvl > 0) av.insertAdjacentHTML('beforeend', damageSVG(lvl, look));
+}
+
+/* ---------- debris ---------- */
+function fxDebris(x, y, n){
+  if(!fxEnsure()) return;
+  for(let i=0;i<n;i++) FX.parts.push({x:x+(Math.random()-.5)*50, y, vx:(Math.random()-.5)*4, vy:-(3+Math.random()*5), age:0, life:700+Math.random()*400, size:1.6+Math.random()*2.6, color:Math.random()<.5?'#9a8068':'#6b5a48', grav:.26});
+}
+
+/* ---------- transformation sequence (~1.6s): pillar of light, cracking ground, white-out, art swap ---------- */
+function flash(a, fade){
+  const f = document.getElementById('flash');
+  f.style.transition='none'; f.style.opacity=String(a==null?0.5:a);
+  requestAnimationFrame(()=>{ f.style.transition='opacity '+(fade==null?.4:fade)+'s'; f.style.opacity='0'; });
+}
+function transformSeq(side){
+  const form = side==='player' ? currentPlayerForm() : currentEnemyForm();
+  state.holdArt = state.holdArt || {}; state.holdArt[side] = true; // keep the old look until the white-out
+  caption(side==='player' ? 'TRANSFORMATION!' : 'ENEMY TRANSFORMATION!');
+  setPose(side, 'charge', 1500);
+  camFocus(side, 1.38, 520);
+  sfx('transform');
+  xformPillar(side, form.color);
+  addDecal(side, 'crack');
+  let n = 0;
+  const iv = setInterval(()=>{ const g = fighterPoint(side, .98); fxDebris(g.x, g.y, 4); fxSpark(g.x, g.y-20, form.color, 3, 3, 500); shakeArena(); if(++n > 8) clearInterval(iv); }, 70);
+  setTimeout(()=>{ // peak: screen goes white, new form appears behind it
+    state.holdArt[side] = false; renderBattle(); flash(1, .75);
+  }, 620);
+  setTimeout(()=>{
+    const pt = fighterPoint(side, .45);
+    [0,110,230].forEach((t,i)=>setTimeout(()=>fxRing(pt.x, pt.y, form.color, 120+i*70), t));
+    fxSpark(pt.x, pt.y, form.color, 60, 6, 800); fxSpark(pt.x, pt.y, '#fff', 20, 8, 500);
+    addDecal(side, 'crater'); hitStop(110); shakeArena(); camPunch(.08);
+  }, 700);
+  setTimeout(()=>camRelease(), 1600);
+}
+function xformPillar(side, color){
+  const box = document.getElementById('xform-fx'); if(!box) return;
+  const pt = fighterPoint(side, .5), av = document.getElementById(side==='player'?'p-avatar':'e-avatar');
+  const w = Math.max(60, av.getBoundingClientRect().width * .9);
+  const el = document.createElement('div'); el.className = 'pillar';
+  el.style.cssText = `left:${pt.x-w/2}px;width:${w}px;background:linear-gradient(90deg,transparent,${color},#fff,${color},transparent);`;
+  box.appendChild(el);
+  if(el.animate) el.animate([{transform:'scaleY(0)',opacity:0},{transform:'scaleY(1)',opacity:.9,offset:.35},{transform:'scaleY(1)',opacity:.9,offset:.75},{transform:'scaleY(1) scaleX(2.6)',opacity:0}], {duration:1500, easing:'ease-out'});
+  setTimeout(()=>el.remove(), 1560);
+}
+
+/* ---------- cinematic ultimate (impact lands ~1.5s after the button press) ---------- */
+function cinematicUltimate(dmg){
+  const p = state.player, form = currentPlayerForm(), look = lookFor(p.def, form);
+  const cine = document.getElementById('cine'), dim = document.getElementById('cine-dim');
+  cine.innerHTML = `<div class="cine-band" style="color:${form.color}"><div class="cine-face">${fighterBustSVG(look)}</div><div class="cine-text"><small>${form.name}</small><b>${p.def.ultimate}</b></div></div>`;
+  cine.classList.add('on'); dim.classList.add('on');
+  caption(p.def.ultimate.toUpperCase()+'!');
+  setPose('player', 'charge', 960); camFocus('player', 1.34, 520); sfx('charge');
+  [0,300,600].forEach(t=>setTimeout(()=>{ const q = fighterPoint('player', .55); fxRing(q.x, q.y, form.color, 110+t/5); fxSpark(q.x, q.y, form.color, 10, 3, 500); }, t));
+  setTimeout(()=>{
+    const b = cine.querySelector('.cine-band'); if(b) b.classList.add('out');
+    camMid(1.1, 500); fireOrb('player', true); sfx('beam');
+  }, 960);
+  setTimeout(()=>{
+    state.holdEnemyHp = null; renderBattle();
+    hitFlash('enemy', true); popDamage('enemy', '-'+dmg); shakeArena(); flash(.9, .8); addDecal('enemy', 'crater'); camPunch(.1);
+  }, 960 + 600);
+  setTimeout(()=>{ cine.classList.remove('on'); dim.classList.remove('on'); cine.innerHTML = ''; camRelease(); }, 960 + 600 + 650);
+}
+
+/* ---------- audio: synthesized effects + adaptive music (Web Audio, no files) ---------- */
+const AUD = {ctx:null, master:null, sfxG:null, musG:null, noise:null, muted:false, want:0, level:0, playing:false, step:0, next:0, timer:null};
+try{ AUD.muted = localStorage.getItem('sr-muted')==='1'; }catch(e){}
+function audioInit(){
+  if(AUD.ctx){ if(AUD.ctx.state==='suspended') AUD.ctx.resume(); return true; }
+  try{
+    const C = window.AudioContext || window.webkitAudioContext; if(!C) return false;
+    const c = AUD.ctx = new C();
+    AUD.master = c.createGain(); AUD.master.gain.value = AUD.muted ? 0 : .8;
+    const comp = c.createDynamicsCompressor(); AUD.master.connect(comp); comp.connect(c.destination);
+    AUD.sfxG = c.createGain(); AUD.sfxG.gain.value = .9; AUD.sfxG.connect(AUD.master);
+    AUD.musG = c.createGain(); AUD.musG.gain.value = .32; AUD.musG.connect(AUD.master);
+    const len = c.sampleRate*1.5, b = c.createBuffer(1, len, c.sampleRate), d = b.getChannelData(0);
+    for(let i=0;i<len;i++) d[i] = Math.random()*2-1;
+    AUD.noise = b;
+    musicSet(AUD.want);
+    return true;
+  }catch(e){ AUD.ctx = null; return false; }
+}
+function tone(type, f0, f1, dur, vol, when, dest){
+  const c = AUD.ctx, t = when || c.currentTime, o = c.createOscillator(), g = c.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t);
+  if(f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t+dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(.0002, vol), t+Math.min(.02, dur/3)); g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+  o.connect(g); g.connect(dest || AUD.sfxG); o.start(t); o.stop(t+dur+.05);
+}
+function noiseHit(dur, vol, ftype, f0, f1, when, dest){
+  const c = AUD.ctx, t = when || c.currentTime, s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+  s.buffer = AUD.noise; f.type = ftype; f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t+dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+  s.connect(f); f.connect(g); g.connect(dest || AUD.sfxG); s.start(t, Math.random()*.5); s.stop(t+dur+.05);
+}
+function sfx(name){
+  if(!AUD.ctx || AUD.muted) return;
+  try{
+    const t = AUD.ctx.currentTime;
+    switch(name){
+      case 'ui': tone('square', 660, 880, .07, .06); break;
+      case 'whoosh': noiseHit(.26, .28, 'bandpass', 400, 2400); break;
+      case 'dodge': noiseHit(.3, .3, 'bandpass', 2600, 500); tone('sine', 900, 300, .25, .08); break;
+      case 'hit': noiseHit(.14, .55, 'lowpass', 2200, 200); tone('sine', 170, 50, .16, .6); break;
+      case 'heavy': noiseHit(.6, .8, 'lowpass', 1400, 50); tone('sine', 95, 28, .7, .95); noiseHit(.25, .35, 'highpass', 3000, 800); break;
+      case 'block': tone('triangle', 240, 110, .12, .35); noiseHit(.08, .25, 'bandpass', 3000, 1200); break;
+      case 'blast': tone('sawtooth', 280, 1000, .32, .16); noiseHit(.35, .22, 'bandpass', 700, 3200); break;
+      case 'charge': tone('sawtooth', 90, 620, .95, .14); tone('triangle', 180, 1240, .95, .08); break;
+      case 'beam': noiseHit(1.1, .5, 'bandpass', 600, 1800); tone('sawtooth', 110, 55, 1.1, .35); tone('square', 220, 110, 1.0, .12); break;
+      case 'transform': noiseHit(1.5, .55, 'lowpass', 180, 40); tone('sawtooth', 55, 1100, .95, .22); tone('triangle', 110, 2200, .95, .1);
+        noiseHit(.9, .7, 'highpass', 4000, 600, t+.62); tone('sine', 120, 40, .9, .9, t+.62); break;
+      case 'win': [523,659,784,1047].forEach((f,i)=>tone('triangle', f, f, .35, .22, t+i*.13)); tone('sine', 1047, 1047, 1.2, .18, t+.55); break;
+      case 'lose': [392,330,262,196].forEach((f,i)=>tone('sawtooth', f, f*.97, .5, .14, t+i*.28)); break;
+    }
+  }catch(e){}
+}
+function midi(m){ return 440*Math.pow(2, (m-69)/12); }
+const MUSIC_ROOTS = [45, 43, 41, 40, 38];
+function musicStep(t, step){
+  const c = AUD.ctx, L = AUD.level, bar = Math.floor(step/16)%4, s = step%16;
+  const root = (MUSIC_ROOTS[(state.chapterIndex||0)%5] || 45) + [0,-2,-4,-2][bar];
+  const D = AUD.musG;
+  if(L === 0){
+    if(s === 0) [0,7,12].forEach(i=>tone('triangle', midi(root+12+i), midi(root+12+i), 3.4, .05, t, D));
+    if(s%8 === 0) tone('sine', midi(root+24+[0,7,3,10][(step>>3)%4]), midi(root+24+[0,7,3,10][(step>>3)%4]), 1.2, .05, t, D);
+    return;
+  }
+  if(s%4 === 0 && (L>=2 || s===0 || s===8)) tone('sine', 140, 45, .22, .55, t, D);
+  if(s === 4 || s === 12) noiseHit(.14, .22, 'bandpass', 1800, 900, t, D);
+  if(s%2 === 1) noiseHit(.04, .06+(L>=2?.03:0), 'highpass', 7000, 6000, t, D);
+  const bassSteps = L>=2 ? [0,3,6,8,10,11,14] : [0,6,8,14];
+  if(bassSteps.indexOf(s) >= 0) tone('sawtooth', midi(root-12+(s===10?7:s===6?3:0)), midi(root-12+(s===10?7:s===6?3:0)), .2, .2, t, D);
+  if(L>=2){ const sc = [0,3,5,7,10,12,15], n = sc[(s*3+bar*2)%7]; tone('square', midi(root+24+n), midi(root+24+n), .11, .05, t, D); }
+  if(L>=3 && s%8 === 0){ tone('sawtooth', midi(root+12), midi(root+12), .5, .08, t, D); tone('sawtooth', midi(root+19), midi(root+19), .5, .07, t, D); }
+}
+function musicTick(){
+  if(!AUD.playing || !AUD.ctx) return;
+  const c = AUD.ctx, bpm = AUD.level===0 ? 70 : 98 + AUD.level*14, sp = 60/bpm/4;
+  while(AUD.next < c.currentTime + .15){ musicStep(AUD.next, AUD.step); AUD.next += sp; AUD.step = (AUD.step+1)%64; }
+}
+function musicSet(l){
+  AUD.want = l;
+  if(!AUD.ctx) return;
+  if(l < 0){ AUD.playing = false; return; }
+  AUD.level = l;
+  if(!AUD.playing){ AUD.playing = true; AUD.step = 0; AUD.next = AUD.ctx.currentTime + .05; }
+  if(!AUD.timer) AUD.timer = setInterval(musicTick, 40);
+}
+function toggleSound(){
+  audioInit();
+  AUD.muted = !AUD.muted;
+  try{ localStorage.setItem('sr-muted', AUD.muted?'1':'0'); }catch(e){}
+  if(AUD.master) AUD.master.gain.value = AUD.muted ? 0 : .8;
+  const b = document.getElementById('snd-btn'); if(b) b.textContent = AUD.muted ? '🔇' : '🔊';
+}
+function updateMusicForBattle(){
+  if(!state.player || !state.enemy) return;
+  const hp = state.player.hp / state.player.maxHp;
+  const lvl = Math.min(3, 1 + (hp < .4 ? 1 : 0) + (state.enemy.formIdx > 0 ? 1 : 0) + ((state.chapterIndex||0) >= 3 ? 1 : 0));
+  if(AUD.want !== lvl) musicSet(lvl);
+}
+window.addEventListener('pointerdown', e=>{ audioInit(); if(e.target.closest && e.target.closest('button')) sfx('ui'); }, true);
+window.addEventListener('keydown', ()=>{ audioInit(); }, true);
+document.addEventListener('DOMContentLoaded', ()=>{ const b = document.getElementById('snd-btn'); if(b) b.textContent = AUD.muted ? '🔇' : '🔊'; });
+
 function toggleFullscreen(){
   try{
     if(!document.fullscreenElement){
@@ -1344,11 +1703,6 @@ function logMsg(text, cls){
   log.scrollTop = log.scrollHeight;
 }
 
-function flash(){
-  const f = document.getElementById('flash');
-  f.style.transition='none'; f.style.opacity='0.5';
-  requestAnimationFrame(()=>{ f.style.transition='opacity .4s'; f.style.opacity='0'; });
-}
 
 const DODGE_KI_COST = 6;
 function doAction(kind){
@@ -1359,6 +1713,7 @@ function doAction(kind){
   const pForm = currentPlayerForm();
 
   const pMult = progressionMult();
+  let xformed = false;
 
   if(kind==='attack'){
     const band = rangeBand();
@@ -1368,8 +1723,7 @@ function doAction(kind){
     p.ki = Math.min(p.maxKi, p.ki + 4);
     logMsg((p.flying ? `${p.def.name} swoops down with a Dive Strike for ${dmg} damage!`
                       : `${p.def.name} strikes for ${dmg} damage!`) + (band==='Close' ? ' (point-blank!)' : ''), 'player-line');
-    caption(p.flying ? 'DIVE STRIKE!' : 'STRIKE!');
-    lunge('player');
+    { const st = lunge('player'); caption(p.flying ? 'DIVE STRIKE!' : ({punch:'STRIKE!',kick:'KICK!',uppercut:'UPPERCUT!'})[st]); }
     setTimeout(()=>{ hitFlash('enemy'); popDamage('enemy', '-'+dmg); }, 220);
   } else if(kind==='kiblast'){
     if(p.ki < 10){ logMsg('Not enough Ki to fire a blast!', 'sys-line'); state.turnLock=false; renderActions(); return; }
@@ -1400,19 +1754,15 @@ function doAction(kind){
     const newForm = currentPlayerForm();
     if(newForm.name !== pForm.name){
       logMsg(`⚡ TRANSFORMATION! ${p.def.name} ascends to ${newForm.name}!`, 'sys-line');
-      flash();
-      setTimeout(()=>{ caption('TRANSFORMATION!'); transformBurst('player'); }, 150);
+      xformed = true; transformSeq('player');
     }
   } else if(kind==='ultimate'){
     if(p.ki < p.maxKi*0.6){ logMsg('Ki too low to unleash the ultimate attack!', 'sys-line'); state.turnLock=false; renderActions(); return; }
     p.ki -= p.maxKi*0.6;
     const dmg = Math.max(10, Math.round(p.def.atk*3*pForm.mult*pMult - e.def.def*0.3 + rnd(0,10)));
-    e.hp -= dmg;
+    state.holdEnemyHp = e.hp; e.hp -= dmg;
     logMsg(`💥 ${p.def.name} unleashes ${p.def.ultimate} for ${dmg} damage!!`, 'sys-line');
-    flash();
-    caption(p.def.ultimate.toUpperCase()+'!');
-    fireOrb('player', true);
-    setTimeout(()=>{ hitFlash('enemy', true); popDamage('enemy', '-'+dmg); shakeArena(); }, 520);
+    cinematicUltimate(dmg);
   }
 
   renderBattle();
@@ -1421,11 +1771,11 @@ function doAction(kind){
     e.hp = 0; renderBattle();
     logMsg(`${e.def.name} is defeated!`, 'sys-line');
     state.phase = 'won'; // locks every action until the next chapter's story screen
-    setTimeout(chapterVictory, 900);
+    setTimeout(chapterVictory, 900 + (kind==='ultimate' ? 1700 : 0));
     return;
   }
 
-  setTimeout(enemyTurn, kind==='ultimate' ? 1300 : 700);
+  setTimeout(enemyTurn, kind==='ultimate' ? 2500 : (xformed ? 2200 : 700));
 }
 
 // Picks the enemy's move for this turn, then breaks it out of any streak so
@@ -1473,15 +1823,15 @@ function enemyTurn(){
     logMsg(`${e.def.name} gathers energy! Ki rises by ${gain}.`, 'enemy-line');
     caption(e.def.name.toUpperCase()+' GATHERS POWER');
     setPose('enemy','charge',1000);
+    let eXform = false;
     const newForm = currentEnemyForm();
     if(newForm.name !== eForm.name){
       logMsg(`⚡ ${e.def.name} transforms into ${newForm.name}!`, 'sys-line');
-      flash();
-      setTimeout(()=>{ caption('ENEMY TRANSFORMATION!'); transformBurst('enemy'); }, 150);
+      eXform = true; transformSeq('enemy');
     }
     renderBattle();
-    state.turnLock = false;
-    renderActions();
+    if(eXform){ setTimeout(()=>{ if(state.phase==='battle'){ state.turnLock = false; renderActions(); } }, 2200); }
+    else { state.turnLock = false; renderActions(); }
   } else {
     const useBlast = move === 'blast';
     const mult = useBlast ? 1.6 : 1;
@@ -1503,6 +1853,7 @@ function enemyTurn(){
       logMsg(p.flying ? `${p.def.name} weaves through the air — ${e.def.name}'s strike misses!`
                       : `${p.def.name} keeps their distance — ${e.def.name}'s strike misses!`, 'player-line');
       caption('DODGED!');
+      dodgeFx();
       lunge('enemy');
       setTimeout(()=>{ popDamage('player', 'MISS', 'miss'); finishEnemyTurn(); }, 220);
       return;
@@ -1512,6 +1863,7 @@ function enemyTurn(){
     p.hp -= dmg;
     logMsg(`${e.def.name} ${useBlast?'unleashes an energy blast':'attacks'} for ${dmg} damage!`, 'enemy-line');
     caption(useBlast ? 'ENEMY KI BLAST!' : 'ENEMY STRIKE!');
+    setTimeout(()=>{ if(state.phase==='battle') setPose('player','block', 220); }, useBlast ? 220 : 80);
     if(useBlast){
       fireOrb('enemy');
       setTimeout(()=>{ hitFlash('player'); popDamage('player','-'+dmg); shakeArena(); finishEnemyTurn(); }, 460);
@@ -1543,6 +1895,7 @@ function rnd(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
 /* ============================= CHAPTER PROGRESSION ============================= */
 function chapterVictory(){
   if(state.phase!=='won') return; // only one victory per fight — no double-advancing
+  sfx('win');
   state.phase = 'won-done';
   state.moveActive = false; clearMoveInput();
   state.chapterIndex++;
@@ -1564,6 +1917,7 @@ function victoryFinal(){
 
 function gameOver(){ gameOver2(); }
 function gameOver2(){
+  sfx('lose');
   state.moveActive = false; clearMoveInput();
   document.getElementById('end-icon').textContent='💀';
   document.getElementById('end-title').textContent='Defeated...';
@@ -1661,6 +2015,7 @@ function applyPosition(){
 
   const band = rangeBand();
   if(band !== state.lastBand){ state.lastBand = band; updatePowerBadge(); }
+  camAuto();
 }
 
 // One step of movement (dt in seconds). Exported separately from the animation loop so it can be tested.
