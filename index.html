@@ -228,6 +228,34 @@
   .stage-avatar svg{shape-rendering:geometricPrecision;}
 
   /* ---------- camera, poses, cinematics, damage ---------- */
+
+  /* ---------- tactics + progression UI ---------- */
+  .intent{font-size:.72rem;margin-top:3px;color:#ffd36b;font-weight:700;}
+  .trait{font-size:.62rem;color:var(--text-dim);margin-top:2px;}
+  .combo-badge{font-size:.7rem;color:#ffd36b;font-weight:800;margin-top:2px;min-height:1em;}
+  .diff-row{display:flex;gap:8px;align-items:center;justify-content:center;margin:0 0 14px;color:var(--text-dim);font-size:.8rem;}
+  .diff-btn{padding:7px 14px;border-radius:8px;border:1px solid var(--panel-edge);background:#0d1120;color:var(--text);cursor:pointer;}
+  .diff-btn.on{border-color:var(--ki-gold);color:var(--ki-gold);}
+  .ach-panel{max-width:420px;width:100%;margin:10px auto 0;text-align:left;font-size:.85rem;}
+  .ach-panel .prof{color:var(--text-dim);text-align:center;margin:0 0 8px;}
+  .ach{display:flex;gap:10px;align-items:center;padding:6px 8px;border-radius:8px;opacity:.5;}
+  .ach.got{opacity:1;background:rgba(255,211,107,.08);}
+  .ach small{display:block;color:var(--text-dim);}
+  #toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+  .toast-item{background:#101528;border:1px solid var(--ki-gold);border-radius:10px;padding:8px 16px;color:#fff;box-shadow:0 0 18px rgba(255,211,107,.35);animation:toastIn .3s ease-out;}
+  .toast-item small{display:block;color:var(--text-dim);font-size:.7rem;}
+  @keyframes toastIn{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:none;}}
+  .train-box{background:var(--panel);border:1px solid var(--panel-edge);border-radius:12px;padding:22px;max-width:560px;width:100%;text-align:center;}
+  .train-box h3{color:var(--ki-gold);margin:14px 0 8px;}
+  .rank-letter{font-size:5rem;font-weight:900;line-height:1;text-shadow:0 0 24px currentColor;}
+  .rank-letter.rS{color:#ffd23f;} .rank-letter.rA{color:#7dffb0;} .rank-letter.rB{color:#7fc7ff;} .rank-letter.rC{color:#aaa;}
+  .tr-stats{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:8px 0;}
+  .tr-stats div{min-width:90px;} .tr-stats b{display:block;font-size:1.3rem;} .tr-stats small{color:var(--text-dim);font-size:.7rem;}
+  .upg{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid var(--panel-edge);text-align:left;}
+  .upg>div{flex:1;} .upg small{display:block;color:var(--text-dim);font-size:.72rem;}
+  .pips{letter-spacing:2px;color:var(--ki-gold);font-size:.8rem;}
+  .upg-buy{padding:6px 12px;border-radius:8px;border:1px solid var(--ki-gold);background:#141a30;color:var(--ki-gold);cursor:pointer;}
+  .upg-buy:disabled{opacity:.35;cursor:default;}
   .cam{position:absolute;inset:0;transform-origin:50% 80%;transition:transform .6s cubic-bezier(.3,.7,.3,1);will-change:transform;}
   .snd-btn{right:64px;}
   .decals{position:absolute;inset:0;pointer-events:none;}
@@ -329,6 +357,7 @@
   .act-btn:disabled{opacity:.35;cursor:not-allowed;}
   .act-btn.transform{border-color:var(--ki-purple);color:var(--ki-purple);}
   .act-btn.ultimate{border-color:var(--ki-red);color:#ff8080;}
+  .act-btn.guard{border-color:#ffd36b;color:#ffd36b;}
   .act-btn.dodge{border-color:#7dffb0;color:#7dffb0;}
   .stage-avatar.dodging{animation:dodgeDash .65s ease;}
   @keyframes dodgeDash{0%{transform:translate(0,0);opacity:1;}25%{transform:translate(-70px,-26px);opacity:.3;}
@@ -374,7 +403,10 @@
     <div class="aura-ring"></div>
     <h1>SAIYAN RISING</h1>
     <div class="sub">A Warrior's Ascension</div>
+    <button class="menu-btn" id="continue-btn" style="display:none" onclick="continueSave()">▶ Continue Journey</button>
     <button class="menu-btn" onclick="goTo('select-screen')">⚔ New Journey</button>
+    <button class="menu-btn" onclick="showAchievements()">🏆 Achievements</button>
+    <div class="ach-panel" id="ach-panel" style="display:none"></div>
     <button class="menu-btn" onclick="showHowTo()">📖 How To Play</button>
     <button class="menu-btn small" onclick="goTo('title-screen')">Fan-made tribute • original code &amp; story</button>
     <p class="footer-note" id="howto" style="display:none;">Choose a warrior, climb through five escalating battles, and unlock
@@ -387,6 +419,7 @@
     <h2 class="section-title">Choose Your Warrior</h2>
     <p class="section-desc">Every warrior has their own transformation path, power curve, and signature ultimate.</p>
     <div class="roster" id="roster"></div>
+    <div class="diff-row" id="diff-row"><span>Difficulty</span><button class="diff-btn" data-d="easy" onclick="setDifficulty('easy')">Easy</button><button class="diff-btn on" data-d="normal" onclick="setDifficulty('normal')">Normal</button><button class="diff-btn" data-d="hard" onclick="setDifficulty('hard')">Hard</button></div>
     <button class="menu-btn" id="confirm-btn" onclick="startStory()" disabled>Begin the Story</button>
   </div>
 
@@ -426,7 +459,7 @@
         <div class="xform-fx" id="xform-fx"></div>
         <div class="action-caption" id="action-caption"></div>
       </div>
-      <div class="controls-hint" id="controls-hint"><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> move · <kbd>Q</kbd> strike · <kbd>W</kbd> ki blast · <kbd>E</kbd> focus ki · <kbd>R</kbd> dodge (in the air) · <kbd>F</kbd> ultimate</div>
+      <div class="controls-hint" id="controls-hint"><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> move · <kbd>Q</kbd> strike · <kbd>W</kbd> ki blast · <kbd>E</kbd> focus ki · <kbd>B</kbd> barrage · <kbd>G</kbd> guard &amp; counter · <kbd>R</kbd> dodge (in the air) · <kbd>F</kbd> ultimate</div>
       <div class="combatants">
         <div class="fighter player">
           <div class="fighter-head">
@@ -435,6 +468,7 @@
               <div class="fighter-name" id="p-name"></div>
               <div class="fighter-form" id="p-form">Base Form</div>
               <div class="power-badge" id="p-power"></div>
+              <div class="combo-badge" id="combo-badge"></div>
             </div>
           </div>
           <div class="bar-label"><span>HP</span><span id="p-hp-txt"></span></div>
@@ -449,6 +483,7 @@
             <div>
               <div class="fighter-name" id="e-name"></div>
               <div class="fighter-form" id="e-form">Base Form</div>
+              <div class="intent" id="e-intent"></div><div class="trait" id="e-trait"></div>
             </div>
           </div>
           <div class="bar-label"><span id="e-hp-txt"></span><span>HP</span></div>
@@ -463,11 +498,24 @@
     </div>
   </div>
 
+  <!-- TRAINING / RESULTS -->
+  <div class="screen" id="train-screen">
+    <div class="train-box">
+      <div class="chapter-tag">Victory</div>
+      <div class="rank-letter" id="tr-rank">S</div>
+      <div class="tr-stats" id="tr-stats"></div>
+      <h3>Training — <span id="tr-points">0</span> points to spend</h3>
+      <div class="upg-list" id="upg-list"></div>
+      <button class="menu-btn" onclick="leaveTraining()">Next chapter ▶</button>
+    </div>
+  </div>
+
   <!-- END -->
   <div class="screen" id="end-screen">
     <div class="end-icon" id="end-icon">🏆</div>
     <h2 class="section-title" id="end-title">Victory</h2>
     <p class="section-desc" id="end-text"></p>
+    <button class="menu-btn" id="ng-btn" style="display:none" onclick="startNgPlus()">♾ New Game+ (harder enemies, keep upgrades)</button>
     <button class="menu-btn" onclick="location.reload()">Return to Title</button>
   </div>
 </div>
@@ -855,7 +903,7 @@ const CHAPTERS = [
   {
     title:'A Stranger Falls From the Sky', env:'wasteland',
     text:'A scarred pod crashes outside the village. From the wreckage strides Raditz, a low-class Saiyan scouting Earth for conquest. He sneers at your power level — this is your first real fight.',
-    enemy:{name:'Raditz', letter:'R', color:'#ff5f5f', hp:100, ki:60, atk:11, def:8, beam:'#ff5f5f',
+    enemy:{name:'Raditz', trait:'brute', traitText:'Brute — his strikes hit 15% harder', taunt:'Your power level is pathetic, Earthling.', taunt2:'Impossible... a weakling like you?!', letter:'R', color:'#ff5f5f', hp:100, ki:60, atk:11, def:8, beam:'#ff5f5f',
       skin:'#d9a07a', eyes:'#1a1a1a',
       look:{suit:'saiyan', pad:'#a9895a', gloves:'#2a2a33', boots:'#2a2a33'},
       forms:[
@@ -866,7 +914,7 @@ const CHAPTERS = [
   {
     title:'The Elite Squad Arrives', env:'desert',
     text:'Raditz\'s defeat draws attention. Nappa, an armored Saiyan elite with crushing raw strength, lands to finish what he started. He fights without mercy or transformation — just overwhelming power.',
-    enemy:{name:'Nappa', letter:'N', color:'#ffb23f', hp:150, ki:40, atk:15, def:14, beam:'#ffb23f',
+    enemy:{name:'Nappa', trait:'armor', traitText:'Armored — resists strikes, weak to Ki blasts', taunt:'Let me show you real strength!', taunt2:'You scratched my armor... you will pay!', letter:'N', color:'#ffb23f', hp:150, ki:40, atk:15, def:14, beam:'#ffb23f',
       skin:'#d2a27c', eyes:'#1a1a1a',
       look:{suit:'saiyan', bulk:1.24, mustache:true, pad:'#b08a45', gloves:'#3a2a1a', boots:'#3a2a1a'},
       forms:[{name:'Base Form', threshold:0, mult:1, color:'#ffb23f', hairStyle:'none', hair:'#000', outfit:'#6e4a22', accent:'#d8cfa5'}]}
@@ -874,7 +922,7 @@ const CHAPTERS = [
   {
     title:'The Tyrant\'s Elite', env:'namek',
     text:'Word of your growing power reaches a distant tyrant\'s empire. His elegant enforcer, Zarbon, arrives to test you — and hides a monstrous true form beneath his calm exterior.',
-    enemy:{name:'Zarbon', letter:'Z', color:'#3fc7ff', hp:190, ki:100, atk:16, def:15, beam:'#4dffb0',
+    enemy:{name:'Zarbon', trait:'graceful', traitText:'Graceful — may evade your strikes', taunt:'Try not to bleed on my armor.', taunt2:'Enough. Witness my true form!', letter:'Z', color:'#3fc7ff', hp:190, ki:100, atk:16, def:15, beam:'#4dffb0',
       skin:'#a9d4c8', eyes:'#1a1a1a',
       look:{suit:'saiyan', elfEars:true, pad:'#e8a3c8', gloves:'#e6e6f0', boots:'#e6e6f0'},
       forms:[
@@ -885,7 +933,7 @@ const CHAPTERS = [
   {
     title:'The Tyrant\'s Shadow', env:'namekRed',
     text:'A cosmic tyrant known as Frieza descends in a hovering throne, four forms of monstrous power coiled beneath a calm, mocking smile.',
-    enemy:{name:'Frieza', letter:'F', color:'#b56bff', hp:230, ki:120, atk:16, def:16, beam:'#ff4fa8',
+    enemy:{name:'Frieza', trait:'pierce', traitText:'Cruel — his blasts pierce your guard', taunt:'I will give you a quick death. Be grateful.', taunt2:'How is a monkey doing this to me?!', letter:'F', color:'#b56bff', hp:230, ki:120, atk:16, def:16, beam:'#ff4fa8',
       skin:'#d4ece6', eyes:'#ff3b3b',
       look:{suit:'bare', alien:true, tail:true, patches:true, patch:'#1f7a8c', hornColor:'#e6f4ef'},
       forms:[
@@ -898,7 +946,7 @@ const CHAPTERS = [
   {
     title:'The Absorbing Horror', env:'arena',
     text:'From bio-engineered chaos rises Cell, a perfect life-form built to absorb its enemies and grow without end. This is the final battle for the fate of the planet.',
-    enemy:{name:'Cell', letter:'C', color:'#3ddc61', hp:280, ki:140, atk:18, def:18, beam:'#8dff5a',
+    enemy:{name:'Cell', trait:'absorb', traitText:'Absorbs part of every Ki blast as health', taunt:'Perfection needs your power.', taunt2:'I am the perfect being — I cannot lose!', letter:'C', color:'#3ddc61', hp:280, ki:140, atk:18, def:18, beam:'#8dff5a',
       skin:'#5aa7a0', eyes:'#ff3b3b',
       look:{suit:'bare', bio:true, spots:true, crown:true},
       forms:[
@@ -914,6 +962,8 @@ const CHAPTERS = [
 let state = {
   heroId:null,
   chapterIndex:0,
+  upgrades:{power:0,defense:0,ki:0,vitality:0}, points:0, difficulty:'normal', ng:0,
+  stats:{turns:0,damageTaken:0,maxCombo:0}, combo:{count:0,last:null}, lastKillKind:null,
   phase:'menu', // menu | story | battle | won | over — chapters only advance through this sequence
   player:null,
   enemy:null,
@@ -993,7 +1043,8 @@ let navLock = false; // guards chapter/story transitions against rapid double-ta
 function startStory(){
   if(navLock || state.phase!=='menu' || !state.heroId) return;
   navLock = true;
-  state.chapterIndex = 0;
+  state.chapterIndex = 0; state.player = null;
+  state.upgrades = {power:0,defense:0,ki:0,vitality:0}; state.points = 0; state.ng = 0;
   loadChapterStory();
   navLock = false;
 }
@@ -1032,7 +1083,7 @@ function setupBattle(){
   // Persist player HP across chapters partially (heal 40% between fights), reset KI each fight.
   if(!state.player){
     state.player = {
-      def: heroDef, hp: heroDef.baseHP, maxHp: heroDef.baseHP,
+      def: heroDef, hp: heroDef.baseHP + 12*upgLvl('vitality'), maxHp: heroDef.baseHP + 12*upgLvl('vitality'),
       ki: 0, maxKi: heroDef.baseKI, formIdx:0, flying:false, dodgeArmed:false, dodgeCooldown:0
     };
   } else {
@@ -1044,17 +1095,20 @@ function setupBattle(){
   }
 
   state.enemy = {
-    def: ch.enemy, hp: ch.enemy.hp, maxHp: ch.enemy.hp,
+    def: ch.enemy, hp: Math.round(ch.enemy.hp*enemyScale().hp), maxHp: Math.round(ch.enemy.hp*enemyScale().hp),
     ki: 0, maxKi: ch.enemy.ki, formIdx:0,
     lastMove: null, moveStreak: 0 // anti-spam: tracks repeats so the AI can't loop one move forever
   };
   // clear cached art form-keys so the new enemy's art draws even if a form name repeats
   delete document.getElementById('e-portrait').dataset.form;
   delete document.getElementById('e-avatar').dataset.form;
+  state.stats = {turns:0, damageTaken:0, maxCombo:0}; state.combo = {count:0, last:null}; state.lastKillKind = null;
+  planEnemyMove();
 
   setScene(ch.env);
   document.getElementById('log').innerHTML='';
   logMsg(`${ch.enemy.name} appears! ${ch.text.split('.')[0]}.`, 'sys-line');
+  if(ch.enemy.taunt) logMsg(`${ch.enemy.name}: "${ch.enemy.taunt}"`, 'enemy-line');
   if(state.chapterIndex > 0){
     const pct = Math.round((progressionMult()-1)*100);
     logMsg(`${heroDef.name}'s battles have hardened them — all attacks now hit ${pct}% harder than when the journey began.`, 'sys-line');
@@ -1166,6 +1220,7 @@ function renderBattle(){
   const eAura = document.getElementById('e-aura');
   eAura.style.color = eForm.color;
   eAura.classList.toggle('on', eForm.threshold>0);
+  renderIntent(); renderCombo();
   ensureDamage('p-avatar', pLook, pHpPct);
   ensureDamage('e-avatar', eLook, eHpPct);
   updateMusicForBattle();
@@ -1665,6 +1720,153 @@ window.addEventListener('pointerdown', e=>{ audioInit(); if(e.target.closest && 
 window.addEventListener('keydown', ()=>{ audioInit(); }, true);
 document.addEventListener('DOMContentLoaded', ()=>{ const b = document.getElementById('snd-btn'); if(b) b.textContent = AUD.muted ? '🔇' : '🔊'; });
 
+
+/* ============================= TACTICS + PROGRESSION ============================= */
+const DIFFS = { easy:{hp:.8, atk:.75}, normal:{hp:1, atk:1}, hard:{hp:1.3, atk:1.25} };
+function enemyScale(){ const d = DIFFS[state.difficulty] || DIFFS.normal, n = state.ng || 0; return { hp:d.hp*(1+.45*n), atk:d.atk*(1+.3*n) }; }
+function upgLvl(id){ return (state.upgrades && state.upgrades[id]) || 0; }
+function upgradeMult(){ return 1 + .08*upgLvl('power'); }
+function barrageUnlocked(){ return state.chapterIndex >= 1; }
+function setDifficulty(d){
+  state.difficulty = d;
+  document.querySelectorAll('.diff-btn').forEach(b=>b.classList.toggle('on', b.dataset.d===d));
+}
+
+/* ---- combo meter: chaining different offensive moves builds a damage bonus; taking a hit resets it ---- */
+const OFFENSIVE = {attack:1, kiblast:1, barrage:1, ultimate:1};
+function comboMult(kind){
+  const c = state.combo || {count:0,last:null};
+  const n = OFFENSIVE[kind] ? (kind!==c.last ? c.count+1 : c.count) : c.count;
+  return n >= 2 ? 1 + .08*(Math.min(n,6)-1) : 1;
+}
+function bumpCombo(kind){
+  const c = state.combo;
+  if(kind !== c.last){ c.count++; c.last = kind; }
+  if(c.count > state.stats.maxCombo) state.stats.maxCombo = c.count;
+  if(c.count >= 5) achieve('combo5');
+}
+function resetCombo(){ if(state.combo){ state.combo.count = 0; state.combo.last = null; } }
+function renderCombo(){
+  const el = document.getElementById('combo-badge'); if(!el || !state.combo) return;
+  const n = state.combo.count;
+  el.textContent = n>=2 ? `🔥 COMBO x${n}  (+${Math.round((Math.min(n,6)-1)*8)}% damage)` : '';
+}
+
+/* ---- enemy intent (telegraphed move), boss traits, stun ---- */
+function planEnemyMove(){ const e = state.enemy; if(e) e.nextMove = decideEnemyMove(e); }
+function renderIntent(){
+  const e = state.enemy, el = document.getElementById('e-intent'); if(!el || !e) return;
+  const T = { attack:['⚔','Preparing a strike','Guard to counter it'], blast:['💥','Charging an energy blast','Dodge it, or Guard'], gather:['⚡','Gathering power','Free turn — hit hard!'] };
+  if(e.stunned) el.innerHTML = '💫 Stunned — free hit!';
+  else if(e.nextMove){ const t = T[e.nextMove]; el.innerHTML = `${t[0]} ${t[1]} <small style="opacity:.75;font-weight:600">· ${t[2]}</small>`; }
+  const tr = document.getElementById('e-trait'); if(tr) tr.textContent = e.def.traitText || '';
+}
+function traitAdjust(e, type, d){
+  const t = e.def.trait; let evaded = false, heal = 0;
+  if(type==='melee'){ if(t==='armor') d = Math.round(d*.75); if(t==='graceful' && Math.random()<.2){ evaded = true; d = 0; } }
+  else { if(t==='armor') d = Math.round(d*1.25); if(t==='absorb'){ heal = Math.round(d*.3); d -= heal; } }
+  return {d, evaded, heal};
+}
+function doCounter(){
+  const p = state.player, e = state.enemy;
+  const c = Math.max(3, Math.round(p.def.atk*upgradeMult()*progressionMult()*currentPlayerForm().mult*.9 - e.def.def*.3));
+  e.hp -= c; e.stunned = true; state.lastKillKind = 'counter';
+  logMsg(`⚡ ${p.def.name} turns the blow aside and counters for ${c} damage — ${e.def.name} is stunned!`, 'player-line');
+  achieve('counter');
+  setTimeout(()=>{ caption('COUNTER!'); lunge('player'); setTimeout(()=>{ hitFlash('enemy'); popDamage('enemy','-'+c); },220); }, 380);
+}
+
+/* ---- achievements + profile (browser storage; works without it) ---- */
+const ACHS = {
+  first_win:['First Blood','Win your first fight'], untouchable:['Untouchable','Win a fight without taking damage'],
+  combo5:['Combo Artist','Reach a 5-hit combo'], counter:['Perfect Counter','Counter a strike with Guard'],
+  barrage:['Flurry','Use Barrage'], finisher:['Finishing Move','Defeat an enemy with your ultimate'],
+  form_up:['Power Up','Transform during a fight'], clutch:['Clutch','Win a fight with under 15% HP'],
+  srank:['Flawless','Earn an S rank'], legend:['Legend','Finish the story'], hardcore:['Hardcore','Finish the story on Hard']
+};
+function loadJSON(k, d){ try{ const v = JSON.parse(localStorage.getItem(k)); return v || d; }catch(e){ return d; } }
+function saveJSON(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+const ACH_DONE = loadJSON('sr-ach', {}), PROF = loadJSON('sr-prof', {fights:0, wins:0, s:0, best:0});
+function achieve(id){
+  if(ACH_DONE[id] || !ACHS[id]) return;
+  ACH_DONE[id] = 1; saveJSON('sr-ach', ACH_DONE);
+  let t = document.getElementById('toast');
+  if(!t){ t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
+  const n = document.createElement('div'); n.className = 'toast-item'; n.innerHTML = `🏆 <b>${ACHS[id][0]}</b><small>${ACHS[id][1]}</small>`;
+  t.appendChild(n); setTimeout(()=>n.remove(), 3600); sfx('win');
+}
+function showAchievements(){
+  const el = document.getElementById('ach-panel');
+  if(el.style.display !== 'none'){ el.style.display = 'none'; return; }
+  el.innerHTML = `<p class="prof">Fights won: <b>${PROF.wins}</b> · S ranks: <b>${PROF.s}</b> · Best combo: <b>${PROF.best}</b></p>` +
+    Object.keys(ACHS).map(id=>`<div class="ach ${ACH_DONE[id]?'got':''}"><span>${ACH_DONE[id]?'🏆':'🔒'}</span><div><b>${ACHS[id][0]}</b><small>${ACHS[id][1]}</small></div></div>`).join('');
+  el.style.display = 'block';
+}
+
+/* ---- results, training shop, saving ---- */
+const UPGRADES = [
+  {id:'power', name:'Power', desc:'+8% damage', max:5}, {id:'defense', name:'Defense', desc:'+3 defense', max:5},
+  {id:'ki', name:'Ki Control', desc:'+15% Ki from Focus', max:5}, {id:'vitality', name:'Vitality', desc:'+12 max HP', max:5}
+];
+function gradeFight(){
+  const st = state.stats, p = state.player, ch = state.chapterIndex;
+  const par = Math.round(8 + ch*1.5), dmgPct = st.damageTaken / p.maxHp;
+  let rank = 'C';
+  if(st.turns <= par && dmgPct < .25) rank = 'S'; else if(st.turns <= par+4 && dmgPct < .55) rank = 'A'; else if(dmgPct < .9) rank = 'B';
+  const pts = 2 + ({S:2, A:1, B:0, C:0})[rank];
+  state.points += pts;
+  PROF.fights++; PROF.wins++; if(rank==='S') PROF.s++; PROF.best = Math.max(PROF.best, st.maxCombo); saveJSON('sr-prof', PROF);
+  achieve('first_win');
+  if(st.damageTaken === 0) achieve('untouchable');
+  if(p.hp/p.maxHp < .15) achieve('clutch');
+  if(rank === 'S') achieve('srank');
+  if(state.lastKillKind === 'ultimate') achieve('finisher');
+  return {rank, pts, par, turns:st.turns, dmg:st.damageTaken, combo:st.maxCombo};
+}
+function showTraining(res){
+  state.phase = 'train';
+  const hr = document.getElementById('tr-rank'); hr.textContent = res.rank; hr.className = 'rank-letter r'+res.rank;
+  document.getElementById('tr-stats').innerHTML =
+    `<div><b>${res.turns}</b><small>turns (par ${res.par})</small></div><div><b>${res.dmg}</b><small>damage taken</small></div><div><b>${res.combo}</b><small>best combo</small></div><div><b>+${res.pts}</b><small>training points</small></div>`;
+  renderTraining();
+  goTo('train-screen');
+}
+function renderTraining(){
+  document.getElementById('tr-points').textContent = state.points;
+  document.getElementById('upg-list').innerHTML = UPGRADES.map(u=>{
+    const lv = upgLvl(u.id), pips = '●'.repeat(lv) + '○'.repeat(u.max-lv);
+    return `<div class="upg"><div><b>${u.name}</b><small>${u.desc}</small></div><span class="pips">${pips}</span><button class="upg-buy" onclick="buyUpgrade('${u.id}')" ${(state.points<1||lv>=u.max)?'disabled':''}>${lv>=u.max?'MAX':'+ 1 pt'}</button></div>`;
+  }).join('');
+}
+function buyUpgrade(id){
+  if(state.phase !== 'train') return;
+  const u = UPGRADES.find(x=>x.id===id); if(!u) return;
+  if(state.points < 1 || upgLvl(id) >= u.max) return;
+  state.points--; state.upgrades[id] = upgLvl(id) + 1;
+  if(id === 'vitality' && state.player){ state.player.maxHp += 12; state.player.hp += 12; }
+  sfx('block'); renderTraining(); saveGame();
+}
+function leaveTraining(){ if(state.phase !== 'train') return; saveGame(); loadChapterStory(); }
+function saveGame(){ saveJSON('sr-save', {heroId:state.heroId, chapterIndex:state.chapterIndex, up:state.upgrades, points:state.points, diff:state.difficulty, ng:state.ng||0}); }
+function refreshContinue(){
+  const sv = loadJSON('sr-save', null), b = document.getElementById('continue-btn');
+  if(b) b.style.display = (sv && HEROES[sv.heroId] && sv.chapterIndex < CHAPTERS.length) ? '' : 'none';
+}
+function continueSave(){
+  if(navLock || state.phase !== 'menu') return;
+  const sv = loadJSON('sr-save', null); if(!sv || !HEROES[sv.heroId]) return;
+  state.heroId = sv.heroId; state.chapterIndex = sv.chapterIndex; state.upgrades = Object.assign({power:0,defense:0,ki:0,vitality:0}, sv.up);
+  state.points = sv.points || 0; state.difficulty = sv.diff || 'normal'; state.ng = sv.ng || 0; state.player = null;
+  loadChapterStory();
+}
+function startNgPlus(){
+  if(state.phase !== 'final') return;
+  state.ng = (state.ng||0) + 1; state.chapterIndex = 0; state.player = null;
+  document.getElementById('ng-btn').style.display = 'none';
+  saveGame(); loadChapterStory();
+}
+setTimeout(refreshContinue, 0);
+
 function toggleFullscreen(){
   try{
     if(!document.fullscreenElement){
@@ -1686,6 +1888,8 @@ function renderActions(){
   grid.innerHTML = `
     <button class="act-btn" onclick="doAction('attack')" ${locked?'disabled':''}>👊 Strike <small>[Q]</small></button>
     <button class="act-btn" onclick="doAction('kiblast')" ${locked?'disabled':''}>🔵 Ki Blast <small>[W]</small></button>
+    <button class="act-btn" onclick="doAction('barrage')" ${(locked||!barrageUnlocked()||state.player.ki<20)?'disabled':''} title="4 rapid hits · costs 20 Ki">${barrageUnlocked()?'💫 Barrage <small>[B]</small>':'🔒 Barrage <small>(ch. 2)</small>'}</button>
+    <button class="act-btn guard" onclick="doAction('guard')" ${locked?'disabled':''} title="Take 60% less damage; guarding a strike counters and stuns">🛡 Guard <small>[G]</small></button>
     <button class="act-btn transform" onclick="doAction('focus')" ${locked?'disabled':''}>✨ Focus Ki <small>[E]</small></button>
     <button class="act-btn ultimate" onclick="doAction('ultimate')" ${(locked||!canUltimate)?'disabled':''}>💥 ${state.player.def.ultimate} <small>[F]</small></button>
     <button class="act-btn dodge" onclick="doAction('dodge')" ${(locked || !state.player.flying || state.player.dodgeCooldown>0 || state.player.ki<DODGE_KI_COST)?'disabled':''} title="Airborne only · costs ${DODGE_KI_COST} Ki · the next enemy attack misses · every other turn">🌀 Dodge${state.player.dodgeCooldown>0?' ('+state.player.dodgeCooldown+')':''} <small>[R]</small></button>
@@ -1712,24 +1916,27 @@ function doAction(kind){
   const p = state.player, e = state.enemy;
   const pForm = currentPlayerForm();
 
-  const pMult = progressionMult();
+  const pMult = progressionMult() * upgradeMult() * comboMult(kind);
   let xformed = false;
 
   if(kind==='attack'){
     const band = rangeBand();
     const diveMult = (p.flying ? 1.15 : 1) * (band==='Close' ? 1.10 : 1); // dive momentum + point-blank bonus
-    const dmg = Math.max(2, Math.round(p.def.atk * pForm.mult * pMult * diveMult - e.def.def*0.5 + rnd(-3,4)));
+    let dmg = Math.max(2, Math.round(p.def.atk * pForm.mult * pMult * diveMult - e.def.def*0.5 + rnd(-3,4)));
+    const adj = traitAdjust(e, 'melee', dmg); dmg = adj.d;
     e.hp -= dmg;
     p.ki = Math.min(p.maxKi, p.ki + 4);
-    logMsg((p.flying ? `${p.def.name} swoops down with a Dive Strike for ${dmg} damage!`
-                      : `${p.def.name} strikes for ${dmg} damage!`) + (band==='Close' ? ' (point-blank!)' : ''), 'player-line');
+    logMsg((p.flying ? `${p.def.name} swoops down with a Dive Strike ${dmg>0?`for ${dmg} damage!`:'but finds only an afterimage!'}`
+                      : `${p.def.name} strikes ${dmg>0?`for ${dmg} damage!`:'but finds only an afterimage!'}`) + (band==='Close' ? ' (point-blank!)' : ''), 'player-line');
     { const st = lunge('player'); caption(p.flying ? 'DIVE STRIKE!' : ({punch:'STRIKE!',kick:'KICK!',uppercut:'UPPERCUT!'})[st]); }
-    setTimeout(()=>{ hitFlash('enemy'); popDamage('enemy', '-'+dmg); }, 220);
+    setTimeout(()=>{ if(adj.evaded){ popDamage('enemy','EVADED','miss'); } else { hitFlash('enemy'); popDamage('enemy', '-'+dmg); } }, 220);
   } else if(kind==='kiblast'){
     if(p.ki < 10){ logMsg('Not enough Ki to fire a blast!', 'sys-line'); state.turnLock=false; renderActions(); return; }
     p.ki -= 10;
-    const dmg = Math.max(3, Math.round(p.def.atk*1.5*pForm.mult*pMult - e.def.def*0.4 + rnd(-2,5)));
-    e.hp -= dmg;
+    let dmg = Math.max(3, Math.round(p.def.atk*1.5*pForm.mult*pMult - e.def.def*0.4 + rnd(-2,5)));
+    const adj = traitAdjust(e, 'ki', dmg); dmg = adj.d;
+    e.hp = Math.min(e.maxHp, e.hp - dmg + adj.heal);
+    if(adj.heal) logMsg(`${e.def.name} absorbs ${adj.heal} of the blast as health!`, 'enemy-line');
     logMsg(`${p.def.name} fires a Ki Blast for ${dmg} damage!`, 'player-line');
     caption('KI BLAST!');
     fireOrb('player');
@@ -1744,8 +1951,29 @@ function doAction(kind){
     p.dodgeCooldown = 2; // counts down once per enemy turn -> usable every other turn
     logMsg(`${p.def.name} readies an evasive dash — the next attack won't land!`, 'player-line');
     caption('EVASIVE STANCE!');
+  } else if(kind==='guard'){
+    p.guarding = true; p.ki = Math.min(p.maxKi, p.ki + 8);
+    logMsg(`${p.def.name} braces for impact — ready to counter! (+8 Ki)`, 'player-line');
+    caption('GUARD!'); setPose('player','block',900); sfx('block');
+    { const pt = fighterPoint('player', .5); fxRing(pt.x, pt.y, '#ffd36b', 70); }
+  } else if(kind==='barrage'){
+    if(!barrageUnlocked()){ logMsg('Barrage unlocks after your first victory.', 'sys-line'); state.turnLock=false; renderActions(); return; }
+    if(p.ki < 20){ logMsg('Not enough Ki for a Barrage (needs 20).', 'sys-line'); state.turnLock=false; renderActions(); return; }
+    p.ki -= 20;
+    const hits = []; let total = 0;
+    for(let i=0;i<4;i++){
+      const d = Math.max(1, Math.round(p.def.atk*.6*pForm.mult*pMult - e.def.def*.25 + rnd(-2,3)));
+      const a = traitAdjust(e, 'melee', d); hits.push(a); total += a.d;
+    }
+    e.hp -= total;
+    logMsg(`${p.def.name} unleashes a Barrage — 4 hits for ${total} damage!`, 'player-line');
+    caption('BARRAGE!'); achieve('barrage'); lunge('player');
+    hits.forEach((a,i)=>setTimeout(()=>{
+      setPose('player', i%2 ? 'kick' : 'punch', 170); afterimages('player', 1, '#ffd36b'); sfx('whoosh');
+      if(a.evaded) popDamage('enemy','EVADED','miss'); else { hitFlash('enemy'); popDamage('enemy','-'+a.d); }
+    }, 160 + i*170));
   } else if(kind==='focus'){
-    const gain = Math.round((18 + rnd(0,6)) * (p.flying ? 0.7 : 1)); // harder to concentrate while airborne
+    const gain = Math.round((18 + rnd(0,6)) * (p.flying ? 0.7 : 1) * (1 + .15*upgLvl('ki'))); // harder to concentrate while airborne
     p.ki = Math.min(p.maxKi, p.ki + gain);
     logMsg(`${p.def.name} focuses inner power! Ki rises by ${gain}.`, 'player-line');
     setPose('player','charge',1000);
@@ -1754,28 +1982,32 @@ function doAction(kind){
     const newForm = currentPlayerForm();
     if(newForm.name !== pForm.name){
       logMsg(`⚡ TRANSFORMATION! ${p.def.name} ascends to ${newForm.name}!`, 'sys-line');
-      xformed = true; transformSeq('player');
+      xformed = true; transformSeq('player'); achieve('form_up');
     }
   } else if(kind==='ultimate'){
     if(p.ki < p.maxKi*0.6){ logMsg('Ki too low to unleash the ultimate attack!', 'sys-line'); state.turnLock=false; renderActions(); return; }
     p.ki -= p.maxKi*0.6;
     const dmg = Math.max(10, Math.round(p.def.atk*3*pForm.mult*pMult - e.def.def*0.3 + rnd(0,10)));
-    state.holdEnemyHp = e.hp; e.hp -= dmg;
+    state.holdEnemyHp = e.hp; e.hp -= dmg; state.lastKillKind = 'ultimate';
     logMsg(`💥 ${p.def.name} unleashes ${p.def.ultimate} for ${dmg} damage!!`, 'sys-line');
     cinematicUltimate(dmg);
   }
 
+  if(OFFENSIVE[kind]) bumpCombo(kind);
+  state.stats.turns++;
+  if(kind!=='ultimate') state.lastKillKind = kind;
+  if(e.hp > 0 && !e.tauntMid && e.hp/e.maxHp < .5 && e.def.taunt2){ e.tauntMid = true; logMsg(`${e.def.name}: "${e.def.taunt2}"`, 'enemy-line'); }
   renderBattle();
 
   if(e.hp <= 0){
     e.hp = 0; renderBattle();
     logMsg(`${e.def.name} is defeated!`, 'sys-line');
     state.phase = 'won'; // locks every action until the next chapter's story screen
-    setTimeout(chapterVictory, 900 + (kind==='ultimate' ? 1700 : 0));
+    setTimeout(chapterVictory, 900 + (kind==='ultimate' ? 1700 : kind==='barrage' ? 800 : 0));
     return;
   }
 
-  setTimeout(enemyTurn, kind==='ultimate' ? 2500 : (xformed ? 2200 : 700));
+  setTimeout(enemyTurn, kind==='ultimate' ? 2500 : kind==='barrage' ? 1300 : (xformed ? 2200 : 700));
 }
 
 // Picks the enemy's move for this turn, then breaks it out of any streak so
@@ -1810,11 +2042,17 @@ function enemyTurn(){
   if(state.phase!=='battle') return;
   const p = state.player, e = state.enemy;
   const eForm = currentEnemyForm();
-  const move = decideEnemyMove(e);
+  const move = e.nextMove || decideEnemyMove(e); e.nextMove = null;
 
   const armedDodge = !!p.dodgeArmed;
   p.dodgeArmed = false;
   if(p.dodgeCooldown > 0) p.dodgeCooldown--;
+  const armedGuard = !!p.guarding; p.guarding = false;
+  if(e.stunned){
+    e.stunned = false;
+    logMsg(`${e.def.name} is stunned and can't act!`, 'player-line'); caption('STUNNED!'); setPose('enemy','hit',600); sfx('block');
+    planEnemyMove(); renderBattle(); state.turnLock = false; renderActions(); return;
+  }
 
   if(move === 'gather'){
     if(armedDodge) logMsg(`${p.def.name}'s evasive dash wasn't needed this turn.`, 'player-line');
@@ -1829,6 +2067,7 @@ function enemyTurn(){
       logMsg(`⚡ ${e.def.name} transforms into ${newForm.name}!`, 'sys-line');
       eXform = true; transformSeq('enemy');
     }
+    planEnemyMove();
     renderBattle();
     if(eXform){ setTimeout(()=>{ if(state.phase==='battle'){ state.turnLock = false; renderActions(); } }, 2200); }
     else { state.turnLock = false; renderActions(); }
@@ -1859,9 +2098,12 @@ function enemyTurn(){
       return;
     }
 
-    const dmg = Math.max(2, Math.round(e.def.atk*mult*currentEnemyForm().mult - p.def.def*0.5 + rnd(-3,4)));
-    p.hp -= dmg;
-    logMsg(`${e.def.name} ${useBlast?'unleashes an energy blast':'attacks'} for ${dmg} damage!`, 'enemy-line');
+    let dmg = Math.max(2, Math.round(e.def.atk*mult*currentEnemyForm().mult*enemyScale().atk*((e.def.trait==='brute' && !useBlast) ? 1.15 : 1) - (p.def.def + upgLvl('defense')*3)*0.5 + rnd(-3,4)));
+    if(armedGuard) dmg = Math.max(1, Math.round(dmg * ((useBlast && e.def.trait==='pierce') ? .8 : .4)));
+    p.hp -= dmg; state.stats.damageTaken += dmg; resetCombo();
+    logMsg(`${e.def.name} ${useBlast?'unleashes an energy blast':'attacks'} ${armedGuard?'— guarded! ':''}for ${dmg} damage!`, 'enemy-line');
+    const counterNow = armedGuard && !useBlast && p.hp > 0;
+    if(counterNow) doCounter();
     caption(useBlast ? 'ENEMY KI BLAST!' : 'ENEMY STRIKE!');
     setTimeout(()=>{ if(state.phase==='battle') setPose('player','block', 220); }, useBlast ? 220 : 80);
     if(useBlast){
@@ -1869,7 +2111,7 @@ function enemyTurn(){
       setTimeout(()=>{ hitFlash('player'); popDamage('player','-'+dmg); shakeArena(); finishEnemyTurn(); }, 460);
     } else {
       lunge('enemy');
-      setTimeout(()=>{ hitFlash('player'); popDamage('player','-'+dmg); finishEnemyTurn(); }, 220);
+      setTimeout(()=>{ hitFlash('player'); popDamage('player','-'+dmg); setTimeout(finishEnemyTurn, counterNow ? 700 : 0); }, 220);
     }
     return;
   }
@@ -1878,7 +2120,14 @@ function enemyTurn(){
 function finishEnemyTurn(){
   if(state.phase!=='battle') return;
   const p = state.player;
+  planEnemyMove();
   renderBattle();
+  if(state.enemy.hp <= 0){
+    state.enemy.hp = 0; renderBattle();
+    logMsg(`${state.enemy.def.name} is defeated!`, 'sys-line');
+    state.phase = 'won'; setTimeout(chapterVictory, 900);
+    return;
+  }
 
   if(p.hp <= 0){
     p.hp = 0; renderBattle();
@@ -1898,15 +2147,21 @@ function chapterVictory(){
   sfx('win');
   state.phase = 'won-done';
   state.moveActive = false; clearMoveInput();
+  const res = gradeFight();
   state.chapterIndex++;
   if(state.chapterIndex >= CHAPTERS.length){
     victoryFinal();
   } else {
-    loadChapterStory();
+    saveGame();
+    showTraining(res);
   }
 }
 
 function victoryFinal(){
+  state.phase = 'final';
+  achieve('legend'); if(state.difficulty==='hard') achieve('hardcore');
+  try{ localStorage.removeItem('sr-save'); }catch(e){}
+  document.getElementById('ng-btn').style.display = '';
   document.getElementById('end-icon').textContent='🏆';
   document.getElementById('end-title').textContent='The Universe is Saved';
   document.getElementById('end-text').textContent =
@@ -2053,7 +2308,7 @@ function toggleFly(){
 const KEY_TO_DIR = { arrowup:'up', arrowdown:'down', arrowright:'fwd', arrowleft:'back' };
 // Action hotkeys: Q strike · W ki blast · E focus ki · R dodge (in the air) · F ultimate
 const KEY_TO_ACTION = { q:'attack', keyq:'attack', w:'kiblast', keyw:'kiblast', e:'focus', keye:'focus',
-                        r:'dodge', keyr:'dodge', f:'ultimate', keyf:'ultimate' };
+                        r:'dodge', keyr:'dodge', f:'ultimate', keyf:'ultimate', g:'guard', keyg:'guard', b:'barrage', keyb:'barrage' };
 function dirForKey(e){
   return KEY_TO_DIR[String(e.key||'').toLowerCase()] || KEY_TO_DIR[String(e.code||'').toLowerCase()] || null;
 }
