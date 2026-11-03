@@ -1,0 +1,1751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Saiyan Rising — A Warrior's Ascension</title>
+<style>
+  :root{
+    --void:#07080d;
+    --panel:#0d1120;
+    --panel-edge:#1c2440;
+    --ki-orange:#ff7a1a;
+    --ki-gold:#ffd23f;
+    --ki-blue:#3fc7ff;
+    --ki-red:#ff3b3b;
+    --ki-purple:#b56bff;
+    --text:#eef1fb;
+    --text-dim:#8b93b8;
+    --hp:#3ddc61;
+    --hp-low:#ff4d4d;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--void);color:var(--text);
+    font-family:'Trebuchet MS',Verdana,sans-serif;overflow:hidden;}
+  #app{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;}
+
+  /* ---------- Starfield / energy backdrop ---------- */
+  #bg{position:absolute;inset:0;overflow:hidden;background:
+      radial-gradient(ellipse at 50% 120%, #241228 0%, var(--void) 60%);}
+  .spark{position:absolute;border-radius:50%;background:var(--ki-gold);opacity:.7;
+    filter:blur(0.5px);animation:drift linear infinite;}
+  @keyframes drift{from{transform:translateY(0);}to{transform:translateY(-120vh);}}
+
+  /* ---------- Screens ---------- */
+  .screen{position:relative;z-index:2;width:min(1180px,96vw);max-height:100vh;overflow:auto;
+    display:none;flex-direction:column;align-items:center;padding:28px 22px 34px;}
+
+  /* ---------- Movement controls ---------- */
+  .controls-hint{font-size:.72rem;color:var(--text-dim);text-align:center;margin:-2px 0 8px;letter-spacing:.3px;}
+  .controls-hint kbd{display:inline-block;min-width:1.5em;padding:1px 5px;border:1px solid var(--panel-edge);
+    border-bottom-width:2px;border-radius:4px;background:#101528;color:var(--text);font:inherit;font-weight:700;}
+  @media (hover:none){ .controls-hint{display:none;} }
+
+  .joystick{position:fixed;left:18px;bottom:18px;z-index:25;display:none;touch-action:none;user-select:none;-webkit-user-select:none;}
+  body.touch.in-battle .joystick{display:block;}
+  /* touch layout: arena on top, joystick bottom-left, compact action buttons bottom-right */
+  body.touch #battle-screen{padding-bottom:230px;}
+  body.touch .stage{--stageH:clamp(220px,36vh,520px);}
+  body.touch .action-grid{position:fixed;left:176px;right:12px;bottom:14px;z-index:24;margin:0;
+    grid-template-columns:repeat(2,1fr);gap:6px;}
+  body.touch .act-btn{padding:9px 4px;font-size:.78rem;}
+  .act-btn small{opacity:.55;font-size:.7em;font-weight:600;}
+  body.touch .act-btn small{display:none;}
+  body.touch .vs-mid, body.touch .controls-hint{display:none;}
+  body.touch #log{height:56px;}
+  body.touch .transform-tree{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;}
+  body.touch .tform-chip{white-space:nowrap;}
+  .joy-base{position:relative;width:140px;height:140px;border-radius:50%;touch-action:none;
+    background:radial-gradient(circle, rgba(63,199,255,.10) 0%, rgba(13,17,32,.62) 70%);
+    border:2px solid rgba(255,255,255,.2);}
+  .joy-knob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #8fe0ff, #2a6fa0);box-shadow:0 0 16px rgba(63,199,255,.55);
+    touch-action:none;pointer-events:none;}
+  .joy-dir{position:absolute;font-size:.7rem;color:rgba(255,255,255,.35);pointer-events:none;}
+  .joy-dir.up{top:6px;left:50%;transform:translateX(-50%);}
+  .joy-dir.down{bottom:6px;left:50%;transform:translateX(-50%);}
+  .joy-dir.back{left:8px;top:50%;transform:translateY(-50%);}
+  .joy-dir.fwd{right:8px;top:50%;transform:translateY(-50%);}
+  .fs-btn{position:fixed;top:12px;right:14px;z-index:30;width:42px;height:42px;border-radius:10px;
+    border:1px solid var(--panel-edge);background:rgba(13,17,32,.85);color:var(--text);font-size:1.25rem;
+    cursor:pointer;transition:.15s;}
+  .fs-btn:hover{border-color:var(--ki-gold);color:var(--ki-gold);}
+  .screen.active{display:flex;}
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--panel-edge);border-radius:4px;}
+
+  /* ---------- Title ---------- */
+  #title-screen h1{
+    font-size:clamp(2.4rem,7vw,4.2rem);letter-spacing:2px;margin:0 0 4px;
+    text-align:center;font-weight:900;
+    background:linear-gradient(180deg,#fff 0%, var(--ki-gold) 55%, var(--ki-orange) 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 0 40px rgba(255,122,26,.35);
+    animation:pulseGlow 3s ease-in-out infinite;
+  }
+  @keyframes pulseGlow{0%,100%{filter:drop-shadow(0 0 8px rgba(255,180,60,.5));}50%{filter:drop-shadow(0 0 22px rgba(255,180,60,.9));}}
+  #title-screen .sub{color:var(--text-dim);letter-spacing:4px;font-size:.8rem;text-transform:uppercase;margin-bottom:26px;}
+  .aura-ring{width:150px;height:150px;border-radius:50%;position:relative;margin-bottom:18px;
+    background:radial-gradient(circle at 50% 50%, rgba(255,210,63,.25), transparent 70%);}
+  .aura-ring::before,.aura-ring::after{content:"";position:absolute;inset:0;border-radius:50%;
+    border:2px solid rgba(255,150,40,.6);animation:ringPulse 2.2s ease-out infinite;}
+  .aura-ring::after{animation-delay:1.1s;}
+  @keyframes ringPulse{0%{transform:scale(.4);opacity:1;}100%{transform:scale(1.6);opacity:0;}}
+  .menu-btn{
+    width:280px;max-width:80vw;padding:14px 18px;margin:7px 0;border-radius:8px;
+    border:1px solid var(--panel-edge);background:linear-gradient(180deg,#151a30,#0c0f1c);
+    color:var(--text);font-size:1.05rem;letter-spacing:1px;cursor:pointer;font-weight:700;
+    transition:.18s;position:relative;overflow:hidden;
+  }
+  .menu-btn:hover{border-color:var(--ki-orange);transform:translateY(-2px);
+    box-shadow:0 6px 24px rgba(255,122,26,.25);color:var(--ki-gold);}
+  .menu-btn:active{transform:translateY(0);}
+  .menu-btn.small{width:280px;font-size:.85rem;font-weight:400;color:var(--text-dim);background:transparent;border:1px solid transparent;}
+  .menu-btn.small:hover{color:var(--text);border-color:var(--panel-edge);}
+
+  /* ---------- Character select ---------- */
+  h2.section-title{font-size:1.5rem;letter-spacing:1px;margin:0 0 4px;color:var(--ki-gold);text-align:center;}
+  p.section-desc{color:var(--text-dim);text-align:center;margin:0 0 22px;max-width:560px;}
+  .roster{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-bottom:22px;}
+  .hero-card{width:230px;padding:18px;border-radius:12px;border:1px solid var(--panel-edge);
+    background:var(--panel);cursor:pointer;transition:.2s;text-align:center;}
+  .hero-card:hover{border-color:var(--ki-orange);transform:translateY(-4px);}
+  .hero-card.selected{border-color:var(--ki-gold);box-shadow:0 0 24px rgba(255,210,63,.35);}
+  .hero-badge{width:72px;height:72px;border-radius:50%;margin:0 auto 10px;overflow:hidden;
+    display:flex;align-items:flex-end;justify-content:center;background:radial-gradient(circle at 50% 30%, #1c2440, #0a0d18);
+    border:2px solid var(--panel-edge);}
+  .hero-badge svg{width:78px;height:78px;flex-shrink:0;}
+  .hero-card h3{margin:4px 0 2px;font-size:1.05rem;}
+  .hero-card .role{color:var(--text-dim);font-size:.75rem;margin-bottom:8px;}
+  .stat-row{display:flex;justify-content:space-between;font-size:.7rem;color:var(--text-dim);margin:2px 0;}
+  .stat-bar{height:4px;background:#1c2440;border-radius:2px;overflow:hidden;margin-bottom:4px;}
+  .stat-bar span{display:block;height:100%;}
+
+  /* ---------- Battle screen ---------- */
+  #battle-screen{width:min(1500px,99vw);padding:10px 10px 12px;}
+  .arena{width:100%;border-radius:14px;border:1px solid var(--panel-edge);
+    background:linear-gradient(180deg,#0e1326 0%, #090b16 100%);padding:12px 14px 10px;position:relative;}
+  .combatants{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:8px;}
+  .fighter{width:46%;}
+  .fighter.enemy{text-align:right;}
+  .fighter-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .fighter.enemy .fighter-head{flex-direction:row-reverse;}
+  .portrait{width:52px;height:52px;border-radius:50%;overflow:hidden;flex-shrink:0;
+    display:flex;align-items:flex-end;justify-content:center;
+    background:radial-gradient(circle at 50% 30%, #1c2440, #0a0d18);
+    border:2px solid rgba(255,255,255,.15);transition:.4s;}
+  .portrait svg{width:58px;height:58px;flex-shrink:0;}
+  .portrait.glow{box-shadow:0 0 26px 4px currentColor;}
+  .fighter-name{font-weight:700;font-size:1rem;}
+  .fighter-form{font-size:.72rem;color:var(--ki-gold);letter-spacing:.5px;}
+  .power-badge{font-size:.62rem;color:var(--text-dim);margin-top:2px;}
+  .power-badge .up{color:#3ddc61;font-weight:700;}
+  .bar-label{display:flex;justify-content:space-between;font-size:.65rem;color:var(--text-dim);margin:6px 0 2px;}
+  .bar{height:12px;border-radius:6px;background:#161c33;overflow:hidden;border:1px solid #22284a;}
+  .bar-fill{height:100%;transition:width .5s ease;}
+  .hp-fill{background:linear-gradient(90deg,#3ddc61,#8dffb0);}
+  .hp-fill.low{background:linear-gradient(90deg,#ff4d4d,#ff9a9a);}
+  .ki-fill{background:linear-gradient(90deg,var(--ki-blue),#a9ecff);}
+
+  .vs-mid{text-align:center;color:var(--text-dim);font-size:.75rem;letter-spacing:3px;margin:2px 0 10px;}
+
+  /* ---------- Visual battle stage ---------- */
+  .stage{
+    --stageH:clamp(300px,46vh,540px);   /* the arena scales with the window height */
+    --fh:min(calc(var(--stageH) * .46), 26cqw);  /* fighter height (also capped by arena width on narrow screens) */
+    container-type:inline-size;
+    --ground:calc(var(--stageH) * .11);   /* the line fighters stand on, inside the ground plane */
+    --fly:calc(var(--stageH) * .30);    /* how high a flying fighter hovers */
+    --cam:0;
+    position:relative;height:var(--stageH);border-radius:10px;overflow:hidden;margin-bottom:10px;
+    background:#0b0d1c;border:1px solid var(--panel-edge);
+    box-shadow:inset 0 0 90px rgba(0,0,0,.55);}
+  .scene{position:absolute;inset:0;z-index:0;overflow:hidden;}
+  .scene-sky{position:absolute;left:-5%;width:110%;top:0;bottom:calc(var(--stageH) * .23);}
+  .scene-sky svg{width:100%;height:100%;display:block;}
+  .scene-ground{position:absolute;left:0;right:0;bottom:0;height:calc(var(--stageH) * .25);}
+  .scene-ground svg{width:100%;height:100%;display:block;}
+  .lyr{transition:none;}
+  .lyr.far{transform:translateX(calc(var(--cam) * -10px));}
+  .lyr.mid{transform:translateX(calc(var(--cam) * -26px));}
+  .lyr.clouds{animation:cloudSlide 140s linear infinite;}
+  @keyframes cloudSlide{from{transform:translateX(0);}to{transform:translateX(-420px);}}
+  .stage-tint{position:absolute;inset:0;z-index:5;pointer-events:none;mix-blend-mode:soft-light;opacity:.8;}
+  .stage::after{content:"";position:absolute;inset:0;z-index:8;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 55%, transparent 55%, rgba(0,0,0,.42) 100%);}
+  .stage-fighter{position:absolute;bottom:var(--ground);left:12%;width:calc(var(--fh) * .7);height:var(--fh);
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+    transition:bottom .6s cubic-bezier(.3,.7,.3,1);}
+  .stage-fighter.enemy-side{left:auto;right:12%;}
+  #p-stage{bottom:calc(var(--ground) + var(--py, 0) * var(--fly));transition:none;}
+  .stage-avatar{width:calc(var(--fh) * .65);height:var(--fh);position:relative;z-index:3;
+    filter:drop-shadow(0 3px 4px rgba(0,0,0,.55));
+    transition:filter .18s, transform .18s;}
+  .stage-avatar svg{width:100%;height:100%;display:block;transition:.4s;}
+  .stage-fighter.enemy-side .stage-avatar svg{transform:scaleX(-1);}
+  /* idle hover while airborne (uses the separate `translate` property so it composes with other transforms) */
+  @keyframes hoverBob{0%,100%{translate:0 0;}50%{translate:0 -9px;}}
+  .stage-fighter.flying .stage-avatar svg{animation:hoverBob 1.4s ease-in-out infinite;}
+  /* the shadow always stays on the ground, shrinking as the fighter climbs */
+  .stage-shadow{position:absolute;left:50%;bottom:-8px;width:calc(var(--fh) * .55);height:calc(var(--fh) * .07);
+    border-radius:50%;background:rgba(0,0,0,.6);filter:blur(3px);z-index:0;
+    transform:translateX(-50%);transition:bottom .6s cubic-bezier(.3,.7,.3,1), transform .6s, opacity .6s;}
+  #p-stage .stage-shadow{bottom:calc(-8px - var(--py, 0) * var(--fly));
+    transform:translateX(-50%) scale(calc(1 - var(--py, 0) * .4));opacity:calc(1 - var(--py, 0) * .5);transition:none;}
+
+  /* ---------- Fighter art + poses ---------- */
+  .stage-avatar svg.fig{overflow:visible;}
+  .fg{transform-box:view-box;}
+  .torso{transform-origin:50px 99px;animation:breathe 2.8s ease-in-out infinite;}
+  .head{transform-origin:50px 44px;animation:headBob 2.8s ease-in-out infinite;}
+  @keyframes breathe{0%,100%{transform:scaleY(1);}50%{transform:scaleY(1.02);}}
+  @keyframes headBob{0%,100%{transform:translateY(0);}50%{transform:translateY(-.9px);}}
+  .arm-fx,.arm-bx,.arm-fx2,.arm-bc,.arm-fc{display:none;}
+  .pose-punch .arm-f{display:none;}
+  .pose-punch .arm-fx{display:inline;transform-origin:76px 57px;animation:punchOut .26s cubic-bezier(.2,.9,.3,1) both;}
+  @keyframes punchOut{from{transform:scaleX(.3);}to{transform:scaleX(1);}}
+  .pose-blast .arm-f,.pose-blast .arm-b{display:none;}
+  .pose-blast .arm-bx,.pose-blast .arm-fx2{display:inline;transform-origin:50px 60px;animation:thrust .22s ease-out both;}
+  @keyframes thrust{from{transform:scaleX(.45);}to{transform:scaleX(1);}}
+  .pose-charge .arm-f,.pose-charge .arm-b{display:none;}
+  .pose-charge .arm-bc,.pose-charge .arm-fc{display:inline;}
+  .pose-charge .torso{animation:none;transform:scaleY(.965);}
+  .pose-charge .whole{animation:chargeShake .09s linear infinite;}
+  @keyframes chargeShake{0%{transform:translate(-.7px,0);}50%{transform:translate(.7px,-.4px);}100%{transform:translate(-.7px,0);}}
+  .pose-hit .whole{transform-origin:50px 150px;animation:recoil .42s ease-out;}
+  @keyframes recoil{0%{transform:rotate(0);}25%{transform:rotate(-9deg) translateX(-4px);}100%{transform:rotate(0);}}
+
+  /* ---------- FX layer, lighting, damage trail ---------- */
+  #fx{position:absolute;inset:0;width:100%;height:100%;z-index:7;pointer-events:none;mix-blend-mode:screen;}
+  .stage.freeze *{animation-play-state:paused !important;}
+  .stage-avatar{filter:drop-shadow(0 0 1.2px rgba(255,255,255,.35)) drop-shadow(0 4px 5px rgba(0,0,0,.6));}
+  .stage-avatar.hit{filter:brightness(2) saturate(1.3) drop-shadow(0 0 10px #fff);}
+  .stage::before{content:"";position:absolute;left:0;right:0;bottom:0;height:calc(var(--ground) + 12px);z-index:2;pointer-events:none;
+    background:linear-gradient(to top,rgba(0,0,0,.35),transparent);}
+  .bar{position:relative;}
+  .bar-trail{position:absolute;left:0;top:0;height:100%;background:#ffd36b;opacity:.9;transition:width .9s ease .35s;}
+  .bar .bar-fill{position:relative;z-index:1;}
+  .stage-avatar svg{shape-rendering:geometricPrecision;}
+  @media (prefers-reduced-motion:reduce){.torso,.head,.pose-charge .whole{animation:none;}}
+  .stage-aura{position:absolute;bottom:0;width:calc(var(--fh) * .95);height:calc(var(--fh) * 1.15);border-radius:50%;z-index:1;
+    opacity:0;transition:opacity .4s;pointer-events:none;
+    background:radial-gradient(circle, currentColor 0%, transparent 68%);}
+  .stage-aura.on{opacity:.5;animation:auraPulse 1.1s ease-in-out infinite;}
+  @keyframes auraPulse{0%,100%{transform:scale(.9);}50%{transform:scale(1.1);}}
+
+  .action-caption{position:absolute;top:10px;left:0;right:0;text-align:center;font-weight:900;
+    font-size:clamp(1.1rem,2.4vw,1.7rem);letter-spacing:2px;color:var(--ki-gold);text-shadow:0 0 14px rgba(255,180,60,.85);
+    opacity:0;pointer-events:none;z-index:6;transition:opacity .2s;}
+  .action-caption.show{opacity:1;}
+
+  /* lunge attacks: --lunge is the horizontal gap to close, --dive is the vertical offset (set per attack in JS) */
+  @keyframes lungeRight{0%{transform:translate(0,0);}45%{transform:translate(var(--lunge,160px),var(--dive,0px)) scale(1.05);}100%{transform:translate(0,0);}}
+  @keyframes lungeLeft{0%{transform:translate(0,0);}45%{transform:translate(calc(var(--lunge,160px) * -1),var(--dive,0px)) scale(1.05);}100%{transform:translate(0,0);}}
+  .stage-fighter.attack-right .stage-avatar{animation:lungeRight .5s ease;}
+  .stage-fighter.attack-left .stage-avatar{animation:lungeLeft .5s ease;}
+
+  /* hit reaction */
+  @keyframes hitShake{0%,100%{transform:translateX(0);}20%{transform:translateX(-8px);}40%{transform:translateX(7px);}
+    60%{transform:translateX(-5px);}80%{transform:translateX(4px);}}
+  .stage-avatar.hit{animation:hitShake .4s ease;filter:brightness(1.8) saturate(1.4);}
+
+  /* ki blast projectile (position + flight path are set in JS so it can travel between different heights) */
+  .ki-orb{position:absolute;width:28px;height:28px;border-radius:50%;z-index:4;pointer-events:none;
+    background:radial-gradient(circle, #fff 0%, var(--ki-blue) 45%, transparent 75%);
+    box-shadow:0 0 26px 9px var(--ki-blue);}
+
+  /* transform flash burst */
+  .burst{position:absolute;width:16px;height:16px;border-radius:50%;z-index:5;
+    background:#fff;box-shadow:0 0 0 0 rgba(255,255,255,.9);pointer-events:none;
+    animation:burstOut .6s ease-out forwards;}
+  @keyframes burstOut{0%{transform:scale(0);opacity:1;}70%{opacity:.7;}100%{transform:scale(18);opacity:0;}}
+
+  /* floating damage numbers */
+  .dmg-float{position:absolute;z-index:7;font-weight:900;font-size:clamp(1.3rem,2.6vw,2rem);
+    color:#ff6b6b;text-shadow:0 2px 4px rgba(0,0,0,.7);pointer-events:none;
+    animation:dmgFloat 1s ease-out forwards;}
+  .dmg-float.heal{color:#7dffb0;}
+  .dmg-float.miss{color:#9adcff;}
+  @keyframes dmgFloat{0%{transform:translateY(0);opacity:1;}100%{transform:translateY(-56px);opacity:0;}}
+
+  @media (prefers-reduced-motion:reduce){
+    .lyr.clouds,.stage-fighter.flying .stage-avatar svg,.stage-aura.on{animation:none;}
+  }
+
+  .stage.shake{animation:arenaShake .35s;}
+  @keyframes arenaShake{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}
+    50%{transform:translateX(6px);}75%{transform:translateX(-4px);}}
+
+  #log{height:clamp(64px,10vh,110px);overflow-y:auto;background:#080a14;border:1px solid var(--panel-edge);border-radius:8px;
+    padding:6px 12px;font-size:.85rem;line-height:1.45;margin-bottom:10px;}
+  #log p{margin:2px 0;}
+  #log p.enemy-line{color:#ff9a9a;}
+  #log p.player-line{color:#9adcff;}
+  #log p.sys-line{color:var(--ki-gold);font-weight:700;}
+
+  .action-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:6px;}
+  .act-btn{padding:13px 6px;border-radius:8px;border:1px solid var(--panel-edge);
+    background:#101528;color:var(--text);font-weight:700;cursor:pointer;font-size:.9rem;transition:.15s;}
+  .act-btn:hover:not(:disabled){border-color:var(--ki-orange);color:var(--ki-gold);transform:translateY(-2px);}
+  .act-btn:disabled{opacity:.35;cursor:not-allowed;}
+  .act-btn.transform{border-color:var(--ki-purple);color:var(--ki-purple);}
+  .act-btn.ultimate{border-color:var(--ki-red);color:#ff8080;}
+  .act-btn.dodge{border-color:#7dffb0;color:#7dffb0;}
+  .stage-avatar.dodging{animation:dodgeDash .65s ease;}
+  @keyframes dodgeDash{0%{transform:translate(0,0);opacity:1;}25%{transform:translate(-70px,-26px);opacity:.3;}
+    70%{transform:translate(-70px,-26px);opacity:.3;}100%{transform:translate(0,0);opacity:1;}}
+  .act-btn.fly{border-color:var(--ki-blue);color:var(--ki-blue);}
+  .act-btn.fly.airborne{background:rgba(63,199,255,.16);box-shadow:0 0 14px rgba(63,199,255,.35);}
+
+  .transform-tree{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:8px;}
+  .tform-chip{font-size:.65rem;padding:4px 8px;border-radius:12px;border:1px solid var(--panel-edge);color:var(--text-dim);}
+  .tform-chip.unlocked{color:var(--ki-gold);border-color:var(--ki-gold);}
+  .tform-chip.active{background:var(--ki-gold);color:#161200;}
+
+  /* ---------- Story / narration ---------- */
+  #story-screen .story-box{background:var(--panel);border:1px solid var(--panel-edge);border-radius:12px;
+    padding:24px;max-width:640px;text-align:center;}
+  #story-screen .story-box h2{color:var(--ki-gold);margin-top:0;}
+  #story-screen .story-box p{color:#d3d7ef;line-height:1.6;font-size:1rem;}
+  #story-screen .chapter-tag{color:var(--text-dim);letter-spacing:3px;font-size:.7rem;text-transform:uppercase;margin-bottom:10px;}
+
+  /* ---------- End screens ---------- */
+  .end-icon{font-size:3.4rem;margin-bottom:6px;}
+  #flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:50;}
+
+  .footer-note{margin-top:18px;color:var(--text-dim);font-size:.68rem;text-align:center;max-width:480px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="bg"></div>
+  <div id="flash"></div>
+  <div class="joystick" id="joystick" aria-label="Movement joystick">
+    <div class="joy-base" id="joy-base">
+      <span class="joy-dir up">▲</span><span class="joy-dir down">▼</span>
+      <span class="joy-dir back">◀</span><span class="joy-dir fwd">▶</span>
+      <div class="joy-knob" id="joy-knob"></div>
+    </div>
+  </div>
+  <button class="fs-btn" id="fs-btn" onclick="toggleFullscreen()" title="Toggle fullscreen" aria-label="Toggle fullscreen">⛶</button>
+
+  <!-- TITLE -->
+  <div class="screen active" id="title-screen">
+    <div class="aura-ring"></div>
+    <h1>SAIYAN RISING</h1>
+    <div class="sub">A Warrior's Ascension</div>
+    <button class="menu-btn" onclick="goTo('select-screen')">⚔ New Journey</button>
+    <button class="menu-btn" onclick="showHowTo()">📖 How To Play</button>
+    <button class="menu-btn small" onclick="goTo('title-screen')">Fan-made tribute • original code &amp; story</button>
+    <p class="footer-note" id="howto" style="display:none;">Choose a warrior, climb through five escalating battles, and unlock
+    transformation forms as your Ki fills. Time your transformations, manage stamina, and land your
+    ultimate attack to save the universe.</p>
+  </div>
+
+  <!-- CHARACTER SELECT -->
+  <div class="screen" id="select-screen">
+    <h2 class="section-title">Choose Your Warrior</h2>
+    <p class="section-desc">Every warrior has their own transformation path, power curve, and signature ultimate.</p>
+    <div class="roster" id="roster"></div>
+    <button class="menu-btn" id="confirm-btn" onclick="startStory()" disabled>Begin the Story</button>
+  </div>
+
+  <!-- STORY / NARRATION -->
+  <div class="screen" id="story-screen">
+    <div class="story-box">
+      <div class="chapter-tag" id="chapter-tag">Chapter 1</div>
+      <h2 id="story-title"></h2>
+      <p id="story-text"></p>
+      <button class="menu-btn" id="story-continue" onclick="continueFromStory()">Continue ▶</button>
+    </div>
+  </div>
+
+  <!-- BATTLE -->
+  <div class="screen" id="battle-screen">
+    <div class="arena" id="arena">
+      <div class="stage" id="stage">
+        <div class="scene" id="scene"></div>
+        <div class="stage-fighter" id="p-stage">
+          <div class="stage-aura" id="p-aura"></div>
+          <div class="stage-avatar" id="p-avatar"></div>
+          <div class="stage-shadow"></div>
+        </div>
+        <div class="clash-fx" id="clash-fx"></div>
+        <canvas id="fx"></canvas>
+        <div class="stage-fighter enemy-side" id="e-stage">
+          <div class="stage-aura" id="e-aura"></div>
+          <div class="stage-avatar" id="e-avatar"></div>
+          <div class="stage-shadow"></div>
+        </div>
+        <div class="stage-tint" id="stage-tint"></div>
+        <div class="action-caption" id="action-caption"></div>
+      </div>
+      <div class="controls-hint" id="controls-hint"><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> move · <kbd>Q</kbd> strike · <kbd>W</kbd> ki blast · <kbd>E</kbd> focus ki · <kbd>R</kbd> dodge (in the air) · <kbd>F</kbd> ultimate</div>
+      <div class="combatants">
+        <div class="fighter player">
+          <div class="fighter-head">
+            <div class="portrait" id="p-portrait"></div>
+            <div>
+              <div class="fighter-name" id="p-name"></div>
+              <div class="fighter-form" id="p-form">Base Form</div>
+              <div class="power-badge" id="p-power"></div>
+            </div>
+          </div>
+          <div class="bar-label"><span>HP</span><span id="p-hp-txt"></span></div>
+          <div class="bar"><div class="bar-trail" id="p-hp-trail"></div><div class="bar-fill hp-fill" id="p-hp-bar"></div></div>
+          <div class="bar-label"><span>KI</span><span id="p-ki-txt"></span></div>
+          <div class="bar"><div class="bar-fill ki-fill" id="p-ki-bar"></div></div>
+          <div class="transform-tree" id="p-tree"></div>
+        </div>
+        <div class="fighter enemy">
+          <div class="fighter-head">
+            <div class="portrait" id="e-portrait"></div>
+            <div>
+              <div class="fighter-name" id="e-name"></div>
+              <div class="fighter-form" id="e-form">Base Form</div>
+            </div>
+          </div>
+          <div class="bar-label"><span id="e-hp-txt"></span><span>HP</span></div>
+          <div class="bar"><div class="bar-trail" id="e-hp-trail"></div><div class="bar-fill hp-fill" id="e-hp-bar"></div></div>
+          <div class="bar-label"><span id="e-ki-txt"></span><span>KI</span></div>
+          <div class="bar"><div class="bar-fill ki-fill" id="e-ki-bar"></div></div>
+        </div>
+      </div>
+      <div class="vs-mid">▼ BATTLE ▼</div>
+      <div id="log"></div>
+      <div class="action-grid" id="action-grid"></div>
+    </div>
+  </div>
+
+  <!-- END -->
+  <div class="screen" id="end-screen">
+    <div class="end-icon" id="end-icon">🏆</div>
+    <h2 class="section-title" id="end-title">Victory</h2>
+    <p class="section-desc" id="end-text"></p>
+    <button class="menu-btn" onclick="location.reload()">Return to Title</button>
+  </div>
+</div>
+
+<script>
+/* ============================= CHARACTER ART (shaded SVG fighters) ============================= */
+/* Original illustrations drawn in code. Each fighter is built from layered, gradient-shaded parts
+   (back arm / back leg / torso / front leg / front arm / head) so CSS can pose and animate the
+   limbs: idle breathing, punch, two-handed blast, power-up charge and hit recoil. */
+
+function hexToRgb(h){ h=String(h).replace('#',''); if(h.length===3) h=h.split('').map(c=>c+c).join(''); const n=parseInt(h,16); return [(n>>16)&255,(n>>8)&255,n&255]; }
+function rgbToHex(r,g,b){ return '#'+[r,g,b].map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join(''); }
+function shade(hex, amt){ const [r,g,b]=hexToRgb(hex); const t=amt<0?0:255, p=Math.abs(amt); return rgbToHex(r+(t-r)*p, g+(t-g)*p, b+(t-b)*p); }
+function luma(hex){ const [r,g,b]=hexToRgb(hex); return 0.299*r+0.587*g+0.114*b; }
+
+let _figUid = 0;
+
+/* A limb drawn as thick rounded segments: dark outline pass, colour pass, soft highlight pass. */
+function limb(segs, col, o){
+  o = o||{};
+  const lo = o.lo || shade(col,-.4), hi = o.hi || shade(col,.3);
+  const line = (s,extra)=>`<line x1="${s[0]}" y1="${s[1]}" x2="${s[2]}" y2="${s[3]}" stroke-linecap="round" ${extra}/>`;
+  return `<g>`
+    + segs.map(s=>line(s,`stroke="${lo}" stroke-width="${s[4]+1.6}"`)).join('')
+    + segs.map(s=>line(s,`stroke="${col}" stroke-width="${s[4]}"`)).join('')
+    + segs.map(s=>line([s[0]-s[4]*.16,s[1]-s[4]*.12,s[2]-s[4]*.16,s[3]-s[4]*.12,s[4]*.32],`stroke="${hi}" stroke-width="${s[4]*.32}" opacity=".5"`)).join('')
+    + `</g>`;
+}
+
+function hairBack(style, hair, hairD){
+  if(style==='long') return `<path d="M33,14 C22,40 20,80 24,112 L29,104 L31,120 L37,106 L41,118 L46,98 L54,98 L59,118 L63,106 L69,120 L71,104 L76,112 C80,80 78,40 67,14 Z" fill="${hairD}"/>`;
+  if(style==='spiky') return `<path d="M30,22 L22,10 L34,13 L30,0 L42,7 L50,-6 L58,7 L70,0 L66,13 L78,10 L70,22 Z" fill="${hairD}"/>`;
+  if(style==='slick') return `<path d="M33,20 L30,8 L38,12 L38,0 L46,8 L52,-8 L58,8 L66,0 L64,12 L72,8 L67,20 Z" fill="${hairD}"/>`;
+  return '';
+}
+function hairFront(style, u, hair, hairL){
+  const g = `url(#${u}h)`;
+  if(style==='spiky') return `<path d="M36,23 C33,14 36,8 40,7 L35,-3 L44,4 L47,-9 L52,3 L59,-7 L59,5 L68,-2 L63,9 C67,13 66,19 64,23 L61,15 L57,21 L54,13 L50,20 L46,13 L43,20 L40,14 Z" fill="${g}"/>
+    <path d="M41,6 L38,-1 M50,2 L49,-6 M58,3 L61,-3" stroke="${hairL}" stroke-width="1.2" stroke-linecap="round" fill="none" opacity=".8"/>`;
+  if(style==='slick') return `<path d="M36,24 C34,14 38,9 44,8 L45,-4 L51,5 L55,-9 L59,5 L63,-2 L64,9 C66,13 65,19 64,24 L61,17 L57,13 L53,16 L50,21 L47,16 L43,13 L39,17 Z" fill="${g}"/>
+    <path d="M45,5 L45,-2 M55,2 L55,-5" stroke="${hairL}" stroke-width="1.2" stroke-linecap="round" fill="none" opacity=".8"/>`;
+  if(style==='long') return `<path d="M35,24 C32,12 36,6 41,6 L35,-6 L45,2 L48,-11 L53,1 L61,-9 L60,4 L70,-4 L64,9 C68,13 67,19 65,24 L62,15 L58,22 L55,13 L50,22 L45,13 L42,21 L39,14 Z" fill="${g}"/>
+    <path d="M40,5 L37,-3 M50,0 L49,-8 M59,2 L63,-4" stroke="${hairL}" stroke-width="1.2" stroke-linecap="round" fill="none" opacity=".8"/>`;
+  return '';
+}
+
+function hornPath(kind, side){
+  const mx = x => side<0 ? x : 100-x;
+  const [tx,ty] = kind==='long' ? [22,-1] : kind==='small' ? [33,6] : [26,2];
+  return `<path d="M${mx(38)},19 C${mx(29)},19 ${mx(tx-1)},${ty+13} ${mx(tx)},${ty} C${mx(38)},${ty+3} ${mx(45)},4 ${mx(47)},12 Z"/>`;
+}
+
+function fighterInner(o,u){
+  const skin=o.skin||'#f0b78c', hs=o.hairStyle||'none', hair=o.hair||'#1a1a1a';
+  const outfit=o.outfit||'#888888', accent=o.accent||'#333333';
+  const suit=o.suit||(o.armor?'saiyan':'gi');
+  const bulk=o.bulk||1, alien=!!o.alien, bio=!!o.bio;
+  const skinL=shade(skin,.22), skinD=shade(skin,-.28), skinDD=shade(skin,-.5);
+  const outD=shade(outfit,-.38), outL=shade(outfit,.2);
+  const accD=shade(accent,-.35), accL=shade(accent,.28);
+  const hairD=shade(hair,-.42), hairL=shade(hair,.4);
+  const pad=o.pad||accent, padD=shade(pad,-.35), padL=shade(pad,.3);
+  const legCol = suit==='bare' ? skin : outfit;
+
+  // eye colour: golden/blue-haired Saiyan forms get the classic turquoise eyes
+  let iris=o.eyes||'#181818';
+  if(!alien && !bio && hs!=='none' && luma(hair)>165){
+    const [r,,b]=hexToRgb(hair); iris = b>r+40 ? '#2aa8ff' : '#22d3c0';
+  }
+  const rage = !!o.rage;
+  if(rage) iris='#ff2b2b';
+
+  const defs = `<defs>
+    <linearGradient id="${u}s" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${skinL}"/><stop offset=".48" stop-color="${skin}"/><stop offset="1" stop-color="${skinD}"/></linearGradient>
+    <linearGradient id="${u}o" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${outL}"/><stop offset=".5" stop-color="${outfit}"/><stop offset="1" stop-color="${outD}"/></linearGradient>
+    <linearGradient id="${u}a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${accL}"/><stop offset=".5" stop-color="${accent}"/><stop offset="1" stop-color="${accD}"/></linearGradient>
+    <linearGradient id="${u}p" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${padL}"/><stop offset=".5" stop-color="${pad}"/><stop offset="1" stop-color="${padD}"/></linearGradient>
+    <linearGradient id="${u}h" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${hairL}"/><stop offset=".45" stop-color="${hair}"/><stop offset="1" stop-color="${hairD}"/></linearGradient>
+    <linearGradient id="${u}f" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${skinL}"/><stop offset=".55" stop-color="${skin}"/><stop offset="1" stop-color="${skinD}"/></linearGradient>
+    <radialGradient id="${u}m" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></radialGradient>
+  </defs>`;
+
+  /* ---------- behind the body ---------- */
+  let back = '';
+  if(o.tail){
+    const tc = bio ? skin : skin;
+    back += `<path d="M46,102 C14,100 -2,126 8,152" fill="none" stroke="${skinD}" stroke-width="8.6" stroke-linecap="round"/>
+             <path d="M46,102 C14,100 -2,126 8,152" fill="none" stroke="${tc}" stroke-width="6.6" stroke-linecap="round"/>`;
+    if(bio) back += `<path d="M8,152 L3,162 L13,156 Z" fill="${shade(skin,-.55)}"/>`;
+    else back += `<path d="M2,138 C0,146 3,151 8,152" fill="none" stroke="${o.patch||'#7a3fc0'}" stroke-width="6.6" stroke-linecap="round"/>`;
+  }
+  if(o.wings){
+    back += `<path d="M30,54 L4,26 L9,52 L1,70 L22,70 L31,68 Z" fill="${shade(skin,-.45)}" stroke="${shade(skin,-.65)}" stroke-width="1"/>
+             <path d="M70,54 L96,26 L91,52 L99,70 L78,70 L69,68 Z" fill="${shade(skin,-.45)}" stroke="${shade(skin,-.65)}" stroke-width="1"/>`;
+  }
+  back += hairBack(hs, hair, hairD);
+
+  /* ---------- legs ---------- */
+  const bootCol = o.boots || (suit==='gi' ? accent : suit==='saiyan' ? (o.bootsAlt||accent) : null);
+  const boot = (ax,ay)=> bootCol ? `<path d="M${ax-7.5},${ay-15} L${ax+7},${ay-15} L${ax+8},${ay+2} L${ax+18},${ay+4} Q${ax+19},${ay+9} ${ax+16},${ay+9.5} L${ax-8},${ay+9.5} Z" fill="url(#${u}a)" stroke="${accD}" stroke-width="1"/>
+      <path d="M${ax-7.5},${ay-15} L${ax+7},${ay-15}" stroke="${accL}" stroke-width="2"/>`
+    : `<path d="M${ax-6},${ay+2} L${ax+8},${ay+2} Q${ax+19},${ay+4} ${ax+17},${ay+9.5} L${ax-7},${ay+9.5} Z" fill="url(#${u}s)" stroke="${skinD}" stroke-width="1"/>`;
+  const legB = `<g class="fg leg-b">${limb([[39,98,29,123,15],[29,123,23,146,11.5]], legCol)}${boot(23,146)}</g>`;
+  const legF = `<g class="fg leg-f">${limb([[61,98,73,121,15],[73,121,79,146,11.5]], legCol)}${boot(79,146)}</g>`;
+
+  /* ---------- arms ---------- */
+  const sleeve = suit==='gi';
+  const gloveCol = o.gloves || (suit==='saiyan' ? accent : null);
+  const wrist = (x,y,a)=> (suit==='gi'||o.gloves) ? `<circle cx="${x}" cy="${y}" r="6.2" fill="${gloveCol||accent}" stroke="${accD}" stroke-width=".8"/>` : '';
+  const fist = (x,y)=> `<g><circle cx="${x}" cy="${y}" r="6.6" fill="url(#${u}s)" stroke="${skinD}" stroke-width="1"/>
+      <path d="M${x-3.5},${y-2.5} l7,0 M${x-3.5},${y+.5} l7,0" stroke="${skinD}" stroke-width=".7" opacity=".7"/></g>`;
+  const armSkin = (segs)=> limb(segs, skin, {lo:skinD, hi:skinL});
+  const sleeveCap = (x,y,dx,dy)=> sleeve ? limb([[x,y,x+dx*.5,y+dy*.5,14.6]], outfit, {lo:outD, hi:outL}) : '';
+  const padShape = (x,y,s)=> `<path d="M${x-11*s},${y+3} C${x-12*s},${y-10} ${x+12*s},${y-10} ${x+11*s},${y+3} C${x+8*s},${y+8} ${x-8*s},${y+8} ${x-11*s},${y+3} Z" fill="url(#${u}p)" stroke="${padD}" stroke-width="1"/>
+      <path d="M${x-8*s},${y-3} C${x-4*s},${y-8} ${x+4*s},${y-8} ${x+8*s},${y-3}" fill="none" stroke="${padL}" stroke-width="1.2" opacity=".8"/>`;
+  const shoulderB = suit==='saiyan' ? padShape(23,54,1) : sleeveCap(24,57,-9,20);
+  const shoulderF = suit==='saiyan' ? padShape(77,54,1) : sleeveCap(76,57,16,5);
+  const guardB = `<g class="fg arm-b">${armSkin([[24,57,15,77,12.5],[15,77,29,66,10.5]])}${wrist(27.5,67.5)}${fist(30,66)}${shoulderB}</g>`;
+  const guardF = `<g class="fg arm-f">${armSkin([[76,57,91,63,13],[91,63,103,49,10.8]])}${wrist(100,52)}${fist(104,48)}${shoulderF}</g>`;
+  // extended arms used while punching / blasting / charging (CSS swaps them in)
+  const punchArm = `<g class="fg arm-fx">${armSkin([[76,57,98,56,12],[98,56,114,55,10]])}${wrist(110,55)}${fist(116,55)}${shoulderF}</g>`;
+  const blastB = `<g class="fg arm-bx">${armSkin([[24,57,50,64,12],[50,64,82,60,10]])}${fist(86,60)}${shoulderB}</g>`;
+  const blastF = `<g class="fg arm-fx2">${armSkin([[76,57,98,60,12.5],[98,60,116,58,10.5]])}${wrist(112,58)}${fist(119,58)}${shoulderF}</g>`;
+  const chargeB = `<g class="fg arm-bc">${armSkin([[24,57,16,80,12.5],[16,80,12,100,10.5]])}${wrist(13,98)}${fist(12,104)}${shoulderB}</g>`;
+  const chargeF = `<g class="fg arm-fc">${armSkin([[76,57,85,80,13],[85,80,88,100,10.8]])}${wrist(87,98)}${fist(88,104)}${shoulderF}</g>`;
+
+  /* ---------- torso ---------- */
+  const torsoPath = 'M23,52 C30,45 70,45 77,52 C82,64 74,80 66,99 L34,99 C26,80 18,64 23,52 Z';
+  let torso = '';
+  if(suit==='bare'){
+    torso = `<path d="${torsoPath}" fill="url(#${u}s)" stroke="${skinD}" stroke-width="1"/>
+      <path d="M50,52 L50,94" stroke="${skinD}" stroke-width="1" opacity=".55"/>
+      <path d="M31,64 Q41,73 50,63 M69,64 Q59,73 50,63" fill="none" stroke="${skinD}" stroke-width="1.4" opacity=".7"/>
+      <path d="M43,74 Q50,76 57,74 M43,82 Q50,84 57,82 M44,90 Q50,92 56,90" fill="none" stroke="${skinD}" stroke-width="1.2" opacity=".55"/>
+      <ellipse cx="38" cy="60" rx="7" ry="5" fill="#fff" opacity=".12"/>`;
+    if(o.patches){
+      const pc=o.patch||'#7a3fc0';
+      torso += `<path d="M30,58 Q50,70 70,58 L66,80 Q50,90 34,80 Z" fill="${pc}" opacity=".9"/><path d="M30,58 Q50,70 70,58" fill="none" stroke="${shade(pc,.3)}" stroke-width="1.2"/>`;
+    }
+    if(o.spots){
+      torso += [[34,60],[62,66],[40,84],[58,88],[46,70],[68,78],[32,76]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="2.1" fill="${shade(skin,-.6)}" opacity=".75"/>`).join('');
+      torso += `<path d="M50,52 L50,98" stroke="${shade(skin,-.65)}" stroke-width="1.6" opacity=".6"/>`;
+    }
+  } else if(suit==='saiyan'){
+    torso = `<path d="${torsoPath}" fill="url(#${u}o)" stroke="${outD}" stroke-width="1"/>
+      <path d="M27,51 L73,51 L70,80 Q50,92 30,80 Z" fill="url(#${u}a)" stroke="${accD}" stroke-width="1.2"/>
+      <path d="M50,52 L50,88" stroke="${accD}" stroke-width="1.2" opacity=".6"/>
+      <path d="M33,62 Q50,70 67,62" fill="none" stroke="${accD}" stroke-width="1.2" opacity=".6"/>
+      <path d="M30,52 L70,52" stroke="${accL}" stroke-width="1.5" opacity=".7"/>
+      <path d="M34,98 L30,112 L40,112 L42,98 Z M66,98 L70,112 L60,112 L58,98 Z" fill="url(#${u}a)" stroke="${accD}" stroke-width="1"/>`;
+  } else { // gi
+    torso = `<path d="${torsoPath}" fill="url(#${u}o)" stroke="${outD}" stroke-width="1"/>
+      <path d="M41,47 L50,76 L59,47 Z" fill="${accD}"/>
+      <path d="M41,47 L50,76 L59,47" fill="none" stroke="${outL}" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M30,60 Q34,76 36,92 M70,60 Q66,76 64,92" fill="none" stroke="${outD}" stroke-width="1" opacity=".55"/>
+      <ellipse cx="37" cy="62" rx="7" ry="9" fill="#fff" opacity=".1"/>`;
+    // belt / sash
+    torso += `<path d="M33,91 L67,91 L66,100 L34,100 Z" fill="url(#${u}a)" stroke="${accD}" stroke-width="1"/>
+      <path d="M62,95 L72,110 L66,111 L58,99 Z" fill="url(#${u}a)" stroke="${accD}" stroke-width=".8"/>`;
+  }
+  const pelvis = `<path d="M35,96 L65,96 L63,108 Q50,112 37,108 Z" fill="${suit==='bare'?`url(#${u}s)`:`url(#${u}o)`}" stroke="${suit==='bare'?skinD:outD}" stroke-width="1"/>`;
+
+  /* ---------- head ---------- */
+  const facePath = 'M37,22 C37,12 43,8 50,8 C58,8 64,12 64,22 C64,30 61,37 55,42 C52,44.5 48,44.5 45,42 C39,37 37,30 37,22 Z';
+  const eye = (cx)=>`<ellipse cx="${cx}" cy="25" rx="3.5" ry="2.3" fill="${rage?'#ffd0d0':'#fff'}"/>
+      <circle cx="${cx+.6}" cy="25" r="1.9" fill="${iris}"/><circle cx="${cx+.7}" cy="25" r=".9" fill="#050505"/><circle cx="${cx+1.3}" cy="24.2" r=".55" fill="#fff"/>
+      <path d="M${cx-3.8},24.3 Q${cx},21.8 ${cx+3.8},24.3" fill="none" stroke="${skinDD}" stroke-width="1.1"/>`;
+  const browCol = alien||bio ? shade(skin,-.6) : hairD;
+  let head = `<g class="fg head">
+    ${o.horns ? `<g fill="${shade(o.hornColor||'#efe9f7',-.12)}" stroke="${shade(o.hornColor||'#efe9f7',-.6)}" stroke-width="1.3" stroke-linejoin="round">${hornPath(o.horns,-1)}${hornPath(o.horns,1)}</g>` : ''}
+    ${o.tusks ? `<path d="M38,15 L28,1 L43,11 Z M62,15 L72,1 L57,11 Z" fill="#e8dfc4" stroke="#8a7f5a" stroke-width="1"/>` : ''}
+    ${o.crown ? `<path d="M36,16 C35,6 40,-2 50,-4 C60,-2 65,6 64,16 C58,8 42,8 36,16 Z" fill="${o.crownColor||'#e9e2a8'}" stroke="${shade(o.crownColor||'#e9e2a8',-.45)}" stroke-width="1"/>
+        <path d="M40,6 L44,-6 L50,4 L56,-6 L60,6" fill="none" stroke="${shade(o.crownColor||'#e9e2a8',-.35)}" stroke-width="1.2"/>` : ''}
+    <rect x="43.5" y="40" width="13" height="14" rx="4" fill="${skinD}"/>
+    ${o.elfEars ? `<path d="M37,21 L26,14 L37,31 Z M63,21 L74,14 L63,31 Z" fill="url(#${u}s)" stroke="${skinD}" stroke-width="1"/>` : `<ellipse cx="37" cy="26" rx="2.6" ry="4.4" fill="${skin}" stroke="${skinD}" stroke-width=".8"/><ellipse cx="63" cy="26" rx="2.6" ry="4.4" fill="${skinD}" stroke="${skinD}" stroke-width=".8"/>`}
+    <path d="${facePath}" fill="url(#${u}f)" stroke="${skinD}" stroke-width="1"/>
+    <path d="M40,36 Q50,46 60,36 L59,40 Q50,47 41,40 Z" fill="${skinDD}" opacity=".18"/>
+    ${eye(44.5)}${eye(55.5)}
+    ${o.noBrows ? '' : `<path d="M39.5,20.2 L47.5,22.6 M60.5,20.2 L52.5,22.6" stroke="${browCol}" stroke-width="2.2" stroke-linecap="round"/>`}
+    <path d="M50,26.5 Q52.2,31 49.8,32.6" fill="none" stroke="${skinD}" stroke-width="1.1" stroke-linecap="round"/>
+    ${o.mustache ? `<path d="M43,34 Q50,31.5 57,34 Q50,36 43,34 Z" fill="${hairD}"/>` : ''}
+    <path d="M45.5,37.2 Q50,38.4 54.5,36.8" fill="none" stroke="${alien?(o.patch||'#7a3fc0'):skinDD}" stroke-width="${alien?1.6:1}" stroke-linecap="round"/>
+    ${o.patches ? `<path d="M41,13 C44,6 56,6 59,13 C55,10 45,10 41,13 Z" fill="${o.patch||'#7a3fc0'}" opacity=".9"/>` : ''}
+    ${o.spots ? [[42,17],[58,18],[48,38],[54,32]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="1.3" fill="${shade(skin,-.6)}" opacity=".7"/>`).join('') : ''}
+    ${o.mark ? `<path d="M42,17 L42,12 L46,15 L50,11 L54,15 L58,12 L58,17" fill="none" stroke="${o.markColor||'#ff5fd1'}" stroke-width="1.5" stroke-linejoin="round"/>` : ''}
+    ${hairFront(hs, u, hair, hairL)}
+  </g>`;
+
+  const bodyScale = bulk!==1 ? `translate(50 0) scale(${bulk} 1) translate(-50 0)` : '';
+  const body = `<g ${bodyScale?`transform="${bodyScale}"`:''}>
+      ${legB}${legF}
+      <g class="fg torso">${guardB}${torso}${pelvis}</g>
+      ${guardF}${punchArm}${blastB}${blastF}${chargeB}${chargeF}
+    </g>`;
+  return defs + `<g class="fg whole">${back}${body}${head}</g>`;
+}
+
+function fighterSVG(o){
+  const u='fg'+(++_figUid);
+  return `<svg class="fig" viewBox="0 -16 100 176" xmlns="http://www.w3.org/2000/svg" overflow="visible">${fighterInner(o,u)}</svg>`;
+}
+function fighterBustSVG(o){
+  const u='fb'+(++_figUid);
+  return `<svg class="fig-bust" viewBox="22 -14 56 58" xmlns="http://www.w3.org/2000/svg">${fighterInner(o,u)}</svg>`;
+}
+
+/* Merge a character's permanent traits with the traits of the form they are currently in. */
+function lookFor(def, form){
+  return Object.assign({skin:def.skin, eyes:def.eyes, suit:def.suit}, def.look||{}, form||{});
+}
+
+
+/* ============================= BATTLE ENVIRONMENTS ============================= */
+function rng(seed){ let a=seed|0; return ()=>{ a=(a+0x6D2B79F5)|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function ridgePath(seed, base, amp, n, type){
+  const r=rng(seed), W=1760, step=W/n; let x=-80, d=`M-80,${base+60} L-80,${base}`;
+  if(type==='hills'){
+    for(let i=0;i<=n;i++){ const y=base-amp*(.3+.7*r()); d+=` Q${x+step/2},${y-amp*.35} ${x+step},${base-amp*(.3+.7*r())}`; x+=step; }
+  } else if(type==='mesa'){
+    while(x<W){ const w=step*(.8+r()*1.7), h=base-amp*(.25+.75*r()), sl=step*.14; d+=` L${x},${base} L${x+sl},${h} L${x+w-sl},${h} L${x+w},${base}`; x+=w; }
+  } else {
+    while(x<W){ const w=step*(.7+r()*1.2), h=base-amp*(.2+.8*r()); d+=` L${x+w*.5},${h} L${x+w},${base-amp*(.08+.25*r())}`; x+=w; }
+  }
+  return d+` L${W},${base+60} Z`;
+}
+const ENVS = {
+  wasteland:{ sky:['#1b1442','#5b2a63','#c8556a','#ffa564'], sun:{x:1010,y:318,r:60,c:'#ffe6b8',glow:'#ff9a6a'}, stars:true,
+    far:{type:'peaks',c:'#53305f',base:352,amp:120,seed:3}, mid:{type:'mesa',c:'#2d1b43',base:392,amp:140,seed:9},
+    ground:['#6b4441','#2b1819'], haze:'#ff9a6a', crack:'#12080c', tint:'rgba(255,120,70,.55)', cloud:'255,170,150', dust:'#ffb27a', rocks:'#1d1018'},
+  desert:{ sky:['#2f74b8','#6fb0e6','#bfe0f6','#f6e2b6'], sun:{x:780,y:120,r:44,c:'#fffbe6',glow:'#fff1b0'},
+    far:{type:'mesa',c:'#c79a6e',base:350,amp:90,seed:21}, mid:{type:'mesa',c:'#a4694a',base:392,amp:130,seed:5},
+    ground:['#d9b27c','#7d5a3a'], haze:'#fff0c8', crack:'#4a2f18', tint:'rgba(255,220,150,.35)', cloud:'255,255,255', dust:'#f3d9a2', rocks:'#6a4a30'},
+  namek:{ sky:['#1f7048','#4fb06c','#a6e48a','#eaf8a8'], sun:{x:700,y:250,r:50,c:'#fffcc0',glow:'#ffffb0'}, sun2:{x:930,y:210,r:26},
+    far:{type:'hills',c:'#76d6b8',base:352,amp:90,seed:11}, mid:{type:'hills',c:'#35a58c',base:396,amp:80,seed:2}, trees:true,
+    ground:['#4cc8a0','#17574a'], haze:'#d8ffc0', crack:'#0c3a30', tint:'rgba(150,255,170,.30)', cloud:'255,255,225', dust:'#c8ffd8', rocks:'#1d6b5c'},
+  namekRed:{ sky:['#16302f','#2f6a52','#b8804a','#ff7a4a'], sun:{x:1000,y:312,r:86,c:'#ffb070',glow:'#ff6a3a'},
+    far:{type:'hills',c:'#3f7a5a',base:352,amp:90,seed:14}, mid:{type:'hills',c:'#173a32',base:396,amp:80,seed:6}, trees:true,
+    ground:['#3a8a66','#0d2620'], haze:'#ff8a50', crack:'#06140f', tint:'rgba(255,100,60,.50)', cloud:'255,150,110', dust:'#ff9a6a', rocks:'#0e2a22'},
+  arena:{ sky:['#43607f','#7e9ab5','#c0cfdb','#e6edf1'], sun:null, heavyClouds:true,
+    far:{type:'hills',c:'#728b72',base:354,amp:60,seed:31}, mid:{type:'hills',c:'#51694f',base:398,amp:45,seed:8}, city:true,
+    ground:['#c6cad0','#5d6168'], haze:'#e8eef2', crack:'#3a3e44', tint:'rgba(200,220,255,.28)', cloud:'255,255,255', dust:'#e8eef2', tiles:true, rocks:'#40444a'}
+};
+
+function cloudBlobs(rgb, seed, count, y0, y1, big){
+  const r=rng(seed); let out='';
+  for(let i=0;i<count;i++){
+    const cx=r()*1900-150, cy=y0+r()*(y1-y0), w=(big?200:110)+r()*(big?260:160), h=w*.17;
+    for(let k=0;k<4;k++){
+      const ox=(r()-.5)*w*.7, oy=(r()-.5)*h*.9, ww=w*(.45+r()*.35);
+      out+=`<ellipse cx="${(cx+ox).toFixed(0)}" cy="${(cy+oy).toFixed(0)}" rx="${ww.toFixed(0)}" ry="${(h*(.9+r()*.5)).toFixed(0)}" fill="url(#cg${seed})"/>`;
+    }
+  }
+  return `<radialGradient id="cg${seed}"><stop offset="0" stop-color="rgb(${rgb})" stop-opacity=".55"/><stop offset="1" stop-color="rgb(${rgb})" stop-opacity="0"/></radialGradient>${out}`;
+}
+function treesAlong(seed, base, color){
+  const r=rng(seed); let out='';
+  for(let i=0;i<16;i++){
+    const x=60+r()*1500, h=34+r()*50, w=14+r()*14, y=base-8;
+    out+=`<path d="M${x},${y} L${x},${y-h} " stroke="${color}" stroke-width="3.4" stroke-linecap="round"/>
+          <ellipse cx="${x}" cy="${y-h}" rx="${w}" ry="${w*.62}" fill="${color}"/>`;
+  }
+  return out;
+}
+function cityAlong(seed, base, color){
+  const r=rng(seed); let x=60, out='';
+  while(x<1560){ const w=26+r()*40, h=30+r()*95; out+=`<path d="M${x},${base} L${x},${base-h} L${x+w*.15},${base-h-4} L${x+w*.85},${base-h-4} L${x+w},${base-h} L${x+w},${base} Z" fill="${color}"/>`; x+=w+6+r()*30; }
+  return out;
+}
+
+function sceneHTML(key){
+  const e = ENVS[key] || ENVS.wasteland, uid = 'sc'+key;
+  const r = rng(40);
+  const stars = e.stars ? Array.from({length:70},()=>`<circle cx="${(r()*1600).toFixed(0)}" cy="${(r()*230).toFixed(0)}" r="${(.5+r()*1.2).toFixed(1)}" fill="#fff" opacity="${(.25+r()*.6).toFixed(2)}"/>`).join('') : '';
+  const sun = e.sun ? `<circle cx="${e.sun.x}" cy="${e.sun.y}" r="${e.sun.r*4.2}" fill="url(#${uid}sg)"/><circle cx="${e.sun.x}" cy="${e.sun.y}" r="${e.sun.r}" fill="${e.sun.c}"/>` : '';
+  const sun2 = e.sun2 ? `<circle cx="${e.sun2.x}" cy="${e.sun2.y}" r="${e.sun2.r}" fill="${e.sun.c}" opacity=".85"/>` : '';
+  const sky = `<svg viewBox="0 0 1600 420" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="${uid}sky" x1="0" y1="0" x2="0" y2="1">${e.sky.map((c,i)=>`<stop offset="${(i/(e.sky.length-1)).toFixed(2)}" stop-color="${c}"/>`).join('')}</linearGradient>
+      ${e.sun?`<radialGradient id="${uid}sg"><stop offset="0" stop-color="${e.sun.glow}" stop-opacity=".75"/><stop offset=".4" stop-color="${e.sun.glow}" stop-opacity=".22"/><stop offset="1" stop-color="${e.sun.glow}" stop-opacity="0"/></radialGradient>`:''}
+      <linearGradient id="${uid}hz" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${e.haze}" stop-opacity="0"/><stop offset="1" stop-color="${e.haze}" stop-opacity=".55"/></linearGradient>
+    </defs>
+    <rect width="1600" height="420" fill="url(#${uid}sky)"/>
+    ${stars}${sun}${sun2}
+    <g class="lyr clouds">${cloudBlobs(e.cloud, 17, e.heavyClouds?9:6, 40, 250, !!e.heavyClouds)}</g>
+    <g class="lyr far"><path d="${ridgePath(e.far.seed,e.far.base,e.far.amp,11,e.far.type)}" fill="${e.far.c}"/>${e.city?cityAlong(4,e.far.base+4,shade(e.far.c,-.18)):''}</g>
+    <rect x="0" y="250" width="1600" height="170" fill="url(#${uid}hz)"/>
+    <g class="lyr mid"><path d="${ridgePath(e.mid.seed,e.mid.base,e.mid.amp,9,e.mid.type)}" fill="${e.mid.c}"/>${e.trees?treesAlong(8,e.mid.base-20,shade(e.mid.c,-.25)):''}</g>
+    <rect x="0" y="330" width="1600" height="90" fill="url(#${uid}hz)" opacity=".6"/>
+  </svg>`;
+
+  // ground: textured plane with cracks / tiles, rocks, and a hot horizon line
+  const gr = rng(77); let detail='';
+  if(e.tiles){
+    for(let i=-10;i<=26;i++){ const x=i*100; detail+=`<line x1="${800+(x-800)*.28}" y1="0" x2="${x}" y2="200" stroke="${e.crack}" stroke-width="1.6" opacity=".35"/>`; }
+    [8,22,44,74,112,160].forEach(y=>{ detail+=`<line x1="0" y1="${y}" x2="1600" y2="${y}" stroke="${e.crack}" stroke-width="${1+y/60}" opacity=".3"/>`; });
+  } else {
+    for(let i=0;i<30;i++){
+      const x=gr()*1600, y=10+gr()*180, len=40+gr()*130*(y/120+.3); let d=`M${x.toFixed(0)},${y.toFixed(0)}`, cx=x, cy=y;
+      for(let k=0;k<4;k++){ cx+=(gr()-.35)*len*.4; cy+=(gr()-.4)*len*.16; d+=` L${cx.toFixed(0)},${cy.toFixed(0)}`; }
+      detail+=`<path d="${d}" fill="none" stroke="${e.crack}" stroke-width="${(1+y/70).toFixed(1)}" opacity=".4" stroke-linecap="round"/>`;
+    }
+    for(let i=0;i<26;i++){
+      const x=gr()*1600, y=30+gr()*160, w=8+gr()*34*(y/110+.4);
+      detail+=`<ellipse cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" rx="${w.toFixed(0)}" ry="${(w*.34).toFixed(0)}" fill="${e.rocks}" opacity=".75"/><ellipse cx="${(x-w*.2).toFixed(0)}" cy="${(y-w*.1).toFixed(0)}" rx="${(w*.5).toFixed(0)}" ry="${(w*.14).toFixed(0)}" fill="#fff" opacity=".1"/>`;
+    }
+  }
+  const ground = `<svg viewBox="0 0 1600 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="${uid}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${e.ground[0]}"/><stop offset="1" stop-color="${e.ground[1]}"/></linearGradient>
+      <linearGradient id="${uid}gh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${e.haze}" stop-opacity=".7"/><stop offset=".3" stop-color="${e.haze}" stop-opacity="0"/></linearGradient>
+      <filter id="${uid}n" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".012 .06" numOctaves="3" seed="4"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .9 -.2"/></filter>
+    </defs>
+    <rect width="1600" height="200" fill="url(#${uid}g)"/>
+    <rect width="1600" height="200" filter="url(#${uid}n)" opacity=".5"/>
+    ${detail}
+    <rect width="1600" height="200" fill="url(#${uid}gh)"/>
+  </svg>`;
+
+  return `<div class="scene-sky">${sky}</div><div class="scene-ground">${ground}</div>`;
+}
+function setScene(key){
+  const sc=document.getElementById('scene'), st=document.getElementById('stage-tint');
+  if(!sc) return;
+  sc.innerHTML = sceneHTML(key);
+  sc.dataset.env = key;
+  const e = ENVS[key]||ENVS.wasteland;
+  if(st) st.style.background = `linear-gradient(180deg, transparent 20%, ${e.tint})`;
+  const stage=document.getElementById('stage'); if(stage) stage.style.setProperty('--dust', e.dust);
+}
+
+/* ============================= DATA ============================= */
+
+// Each hero has a transformation ladder. Every form multiplies attack/defense, changes the UI accent
+// colour, and re-skins the character's art (hair, outfit, build, eyes). `suit` picks the costume style.
+const HEROES = {
+  goku: {
+    id:'goku', name:'Goku', role:'Earth-Raised Saiyan', color:'#ff7a1a', letter:'G',
+    baseHP:140, baseKI:100, atk:18, def:12,
+    ultimate:'Kamehameha', beam:'#4fc3ff',
+    skin:'#f0b78c', eyes:'#181818', suit:'gi',
+    forms:[
+      {name:'Base Form', threshold:0, mult:1, color:'#ff7a1a', hairStyle:'spiky', hair:'#1a1a1a', outfit:'#1f8f86', accent:'#b8322c'},
+      {name:'Kaioken', threshold:25, mult:1.4, color:'#ff4d4d', hairStyle:'spiky', hair:'#1a1a1a', outfit:'#1f8f86', accent:'#b8322c', rage:true},
+      {name:'Super Saiyan', threshold:50, mult:1.9, color:'#ffe14d', hairStyle:'spiky', hair:'#ffe14d', outfit:'#1f8f86', accent:'#b8322c'},
+      {name:'Super Saiyan 2', threshold:75, mult:2.5, color:'#fff59a', hairStyle:'spiky', hair:'#fff29a', outfit:'#1f8f86', accent:'#b8322c'},
+      {name:'Super Saiyan 3', threshold:100, mult:3.3, color:'#ffd23f', hairStyle:'long', hair:'#ffd23f', outfit:'#1f8f86', accent:'#b8322c', noBrows:true},
+    ]
+  },
+  vegeta: {
+    id:'vegeta', name:'Vegeta', role:'Prideful Prince', color:'#3fc7ff', letter:'V',
+    baseHP:130, baseKI:110, atk:20, def:14,
+    ultimate:'Galick Gun', beam:'#b07bff',
+    skin:'#f0b78c', eyes:'#181818', suit:'saiyan',
+    look:{pad:'#c9a227', gloves:'#cfd6e4', boots:'#cfd6e4'},
+    forms:[
+      {name:'Base Form', threshold:0, mult:1, color:'#3fc7ff', hairStyle:'slick', hair:'#141414', outfit:'#5a1230', accent:'#cfd6e4'},
+      {name:'Super Saiyan', threshold:30, mult:2.0, color:'#ffe14d', hairStyle:'slick', hair:'#ffe14d', outfit:'#5a1230', accent:'#cfd6e4'},
+      {name:'Super Saiyan 2', threshold:60, mult:2.7, color:'#fff59a', hairStyle:'slick', hair:'#fff29a', outfit:'#5a1230', accent:'#cfd6e4'},
+      {name:'Majin Vegeta', threshold:85, mult:3.1, color:'#ff5fd1', hairStyle:'slick', hair:'#141414', outfit:'#1c1c26', accent:'#2a2a38', pad:'#ff5fd1', mark:true, rage:true},
+      {name:'Super Saiyan Blue', threshold:100, mult:3.8, color:'#3fc7ff', hairStyle:'slick', hair:'#3fc7ff', outfit:'#5a1230', accent:'#cfd6e4'},
+    ]
+  },
+  gohan: {
+    id:'gohan', name:'Gohan', role:'Hybrid Prodigy', color:'#b56bff', letter:'G',
+    baseHP:120, baseKI:120, atk:16, def:10,
+    ultimate:'Father-Son Kamehameha', beam:'#6fd6ff',
+    skin:'#f0b78c', eyes:'#181818', suit:'gi',
+    forms:[
+      {name:'Base Form', threshold:0, mult:1, color:'#b56bff', hairStyle:'spiky', hair:'#141414', outfit:'#7a4fcf', accent:'#ff9a3f'},
+      {name:'Great Saiyaman', threshold:20, mult:1.3, color:'#c98bff', hairStyle:'spiky', hair:'#141414', outfit:'#2b9c4a', accent:'#e8e8e8'},
+      {name:'Super Saiyan', threshold:45, mult:1.9, color:'#ffe14d', hairStyle:'spiky', hair:'#ffe14d', outfit:'#7a4fcf', accent:'#ff9a3f'},
+      {name:'Super Saiyan 2', threshold:70, mult:2.6, color:'#fff59a', hairStyle:'spiky', hair:'#fff29a', outfit:'#7a4fcf', accent:'#ff9a3f'},
+      {name:'Ultimate Gohan', threshold:100, mult:3.6, color:'#e9e9f5', hairStyle:'spiky', hair:'#141414', outfit:'#e9e9f5', accent:'#ff7a1a', rage:true},
+    ]
+  }
+};
+
+// Escalating rival roster — five chapters. `env` picks the battle backdrop; `look` holds the build/costume traits.
+const CHAPTERS = [
+  {
+    title:'A Stranger Falls From the Sky', env:'wasteland',
+    text:'A scarred pod crashes outside the village. From the wreckage strides Raditz, a low-class Saiyan scouting Earth for conquest. He sneers at your power level — this is your first real fight.',
+    enemy:{name:'Raditz', letter:'R', color:'#ff5f5f', hp:100, ki:60, atk:11, def:8, beam:'#ff5f5f',
+      skin:'#d9a07a', eyes:'#1a1a1a',
+      look:{suit:'saiyan', pad:'#a9895a', gloves:'#2a2a33', boots:'#2a2a33'},
+      forms:[
+        {name:'Base Form', threshold:0, mult:1, color:'#ff5f5f', hairStyle:'long', hair:'#141414', outfit:'#2a2a33', accent:'#6e4f2f'},
+        {name:'Battle Frenzy', threshold:50, mult:1.6, color:'#ff2b2b', hairStyle:'long', hair:'#141414', outfit:'#3a1515', accent:'#8a3030', rage:true}
+      ]}
+  },
+  {
+    title:'The Elite Squad Arrives', env:'desert',
+    text:'Raditz\'s defeat draws attention. Nappa, an armored Saiyan elite with crushing raw strength, lands to finish what he started. He fights without mercy or transformation — just overwhelming power.',
+    enemy:{name:'Nappa', letter:'N', color:'#ffb23f', hp:150, ki:40, atk:15, def:14, beam:'#ffb23f',
+      skin:'#d2a27c', eyes:'#1a1a1a',
+      look:{suit:'saiyan', bulk:1.24, mustache:true, pad:'#b08a45', gloves:'#3a2a1a', boots:'#3a2a1a'},
+      forms:[{name:'Base Form', threshold:0, mult:1, color:'#ffb23f', hairStyle:'none', hair:'#000', outfit:'#6e4a22', accent:'#d8cfa5'}]}
+  },
+  {
+    title:'The Tyrant\'s Elite', env:'namek',
+    text:'Word of your growing power reaches a distant tyrant\'s empire. His elegant enforcer, Zarbon, arrives to test you — and hides a monstrous true form beneath his calm exterior.',
+    enemy:{name:'Zarbon', letter:'Z', color:'#3fc7ff', hp:190, ki:100, atk:16, def:15, beam:'#4dffb0',
+      skin:'#a9d4c8', eyes:'#1a1a1a',
+      look:{suit:'saiyan', elfEars:true, pad:'#e8a3c8', gloves:'#e6e6f0', boots:'#e6e6f0'},
+      forms:[
+        {name:'Base Form', threshold:0, mult:1, color:'#3fc7ff', hairStyle:'long', hair:'#2ecc9a', outfit:'#2b3a7a', accent:'#f0f0ff'},
+        {name:'Monster Form', threshold:55, mult:2.1, color:'#3a8c4a', hairStyle:'none', hair:'#000', outfit:'#3a2f66', accent:'#9b7ad0', skin:'#6f9a68', bulk:1.34, tusks:true, elfEars:false, pad:'#5a4a8a', rage:true}
+      ]}
+  },
+  {
+    title:'The Tyrant\'s Shadow', env:'namekRed',
+    text:'A cosmic tyrant known as Frieza descends in a hovering throne, four forms of monstrous power coiled beneath a calm, mocking smile.',
+    enemy:{name:'Frieza', letter:'F', color:'#b56bff', hp:230, ki:120, atk:16, def:16, beam:'#ff4fa8',
+      skin:'#d4ece6', eyes:'#ff3b3b',
+      look:{suit:'bare', alien:true, tail:true, patches:true, patch:'#1f7a8c', hornColor:'#e6f4ef'},
+      forms:[
+        {name:'First Form', threshold:0, mult:1, color:'#b56bff', hairStyle:'none', hair:'#000', outfit:'#5a2f9e', accent:'#e8e0f5', horns:'long', bulk:1.3},
+        {name:'Second Form', threshold:35, mult:1.5, color:'#9b4bff', hairStyle:'none', hair:'#000', outfit:'#7a2fbe', accent:'#e8e0f5', horns:'long', bulk:1.36},
+        {name:'Final Form', threshold:70, mult:2.0, color:'#6b1fff', hairStyle:'none', hair:'#000', outfit:'#f5f0ff', accent:'#3a1a7e', horns:'small', bulk:1.0},
+        {name:'100% Power', threshold:100, mult:2.6, color:'#ff3b3b', hairStyle:'none', hair:'#000', outfit:'#ff3b3b', accent:'#3a1a7e', horns:'small', bulk:1.16, rage:true}
+      ]}
+  },
+  {
+    title:'The Absorbing Horror', env:'arena',
+    text:'From bio-engineered chaos rises Cell, a perfect life-form built to absorb its enemies and grow without end. This is the final battle for the fate of the planet.',
+    enemy:{name:'Cell', letter:'C', color:'#3ddc61', hp:280, ki:140, atk:18, def:18, beam:'#8dff5a',
+      skin:'#5aa7a0', eyes:'#ff3b3b',
+      look:{suit:'bare', bio:true, spots:true, crown:true},
+      forms:[
+        {name:'Imperfect Form', threshold:0, mult:1, color:'#3ddc61', hairStyle:'none', hair:'#000', outfit:'#1f6e34', accent:'#0a2e14', wings:true, tail:true, bulk:1.12},
+        {name:'Semi-Perfect Form', threshold:40, mult:1.7, color:'#2bb84f', hairStyle:'none', hair:'#000', outfit:'#237a3d', accent:'#0a2e14', wings:true, tail:true, bulk:1.26, skin:'#66b3a8'},
+        {name:'Perfect Form', threshold:80, mult:2.4, color:'#1f9a3d', hairStyle:'none', hair:'#000', outfit:'#178031', accent:'#e9e9f5', bulk:1.0, skin:'#76c0b2', crownColor:'#f1ecc0'},
+        {name:'Overcharged', threshold:100, mult:3.0, color:'#ff3b3b', hairStyle:'none', hair:'#000', outfit:'#178031', accent:'#ff3b3b', bulk:1.14, rage:true, skin:'#76c0b2'}
+      ]}
+  }
+];
+
+/* ============================= STATE ============================= */
+let state = {
+  heroId:null,
+  chapterIndex:0,
+  player:null,
+  enemy:null,
+  playerFormIdx:0,
+  turnLock:false,
+  pos:{x:0.45, y:0},     // hero position: x 0 (far back) .. 1 (point-blank), y 0 (ground) .. 1 (full height)
+  flyTarget:null,        // auto-pilot target height set by the Fly button (null = none)
+  moveActive:false,      // movement only works during a fight
+  lastBand:null,
+  flyHintShown:false,
+};
+
+/* ============================= BOOT ============================= */
+function makeStars(){
+  const bg = document.getElementById('bg');
+  for(let i=0;i<70;i++){
+    const s = document.createElement('div');
+    s.className='spark';
+    const size = Math.random()*2.4+0.6;
+    s.style.width=s.style.height=size+'px';
+    s.style.left = Math.random()*100+'%';
+    s.style.top = Math.random()*100+'vh';
+    s.style.animationDuration = (6+Math.random()*10)+'s';
+    s.style.animationDelay = (-Math.random()*10)+'s';
+    s.style.opacity = 0.3+Math.random()*0.5;
+    bg.appendChild(s);
+  }
+}
+makeStars();
+
+function goTo(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(document.body) document.body.classList.toggle('in-battle', id==='battle-screen');
+}
+function showHowTo(){
+  const el = document.getElementById('howto');
+  el.style.display = el.style.display==='none' ? 'block':'none';
+}
+
+/* ============================= CHARACTER SELECT ============================= */
+function renderRoster(){
+  const roster = document.getElementById('roster');
+  roster.innerHTML='';
+  Object.values(HEROES).forEach(h=>{
+    const card = document.createElement('div');
+    card.className='hero-card';
+    card.id='card-'+h.id;
+    card.onclick=()=>selectHero(h.id);
+    const baseForm = h.forms[0];
+    card.innerHTML = `
+      <div class="hero-badge">${fighterBustSVG(lookFor(h, baseForm))}</div>
+      <h3>${h.name}</h3>
+      <div class="role">${h.role}</div>
+      <div class="stat-row"><span>Power</span><span>${h.atk}</span></div>
+      <div class="stat-bar"><span style="width:${h.atk*4}%;background:${h.color}"></span></div>
+      <div class="stat-row"><span>Defense</span><span>${h.def}</span></div>
+      <div class="stat-bar"><span style="width:${h.def*5}%;background:${h.color}"></span></div>
+      <div class="stat-row"><span>Forms</span><span>${h.forms.length}</span></div>
+      <div class="stat-row" style="color:${h.color};font-weight:700;">Ultimate: ${h.ultimate}</div>
+    `;
+    roster.appendChild(card);
+  });
+}
+function selectHero(id){
+  state.heroId = id;
+  document.querySelectorAll('.hero-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('card-'+id).classList.add('selected');
+  document.getElementById('confirm-btn').disabled=false;
+}
+renderRoster();
+
+/* ============================= STORY FLOW ============================= */
+let navLock = false; // guards chapter/story transitions against rapid double-taps
+
+function startStory(){
+  if(navLock) return;
+  navLock = true;
+  state.chapterIndex = 0;
+  loadChapterStory();
+  navLock = false;
+}
+function loadChapterStory(){
+  const ch = CHAPTERS[state.chapterIndex];
+  document.getElementById('chapter-tag').textContent = 'Chapter ' + (state.chapterIndex+1) + ' of ' + CHAPTERS.length;
+  document.getElementById('story-title').textContent = ch.title;
+  document.getElementById('story-text').textContent = ch.text;
+  document.getElementById('story-continue').textContent = 'Fight ▶';
+  goTo('story-screen');
+}
+function continueFromStory(){
+  if(navLock) return;
+  navLock = true;
+  setupBattle();
+  goTo('battle-screen');
+  moveMetrics = null;      // re-measure now that the arena is visible
+  applyPosition();
+  navLock = false;
+}
+
+/* ============================= BATTLE SETUP ============================= */
+function setupBattle(){
+  const heroDef = HEROES[state.heroId];
+  const ch = CHAPTERS[state.chapterIndex];
+  state.turnLock = false; // safety: never let a stuck lock carry into a new fight
+  state.pos = {x:0.45, y:0}; state.flyTarget = null; state.lastBand = null; state.flyHintShown = false;
+  clearMoveInput();
+
+  // Persist player HP across chapters partially (heal 40% between fights), reset KI each fight.
+  if(!state.player){
+    state.player = {
+      def: heroDef, hp: heroDef.baseHP, maxHp: heroDef.baseHP,
+      ki: 0, maxKi: heroDef.baseKI, formIdx:0, flying:false, dodgeArmed:false, dodgeCooldown:0
+    };
+  } else {
+    state.player.hp = Math.min(state.player.maxHp, state.player.hp + Math.round(state.player.maxHp*0.4));
+    state.player.ki = 0;
+    state.player.formIdx = 0;
+    state.player.flying = false; // every fight starts on the ground
+    state.player.dodgeArmed = false; state.player.dodgeCooldown = 0;
+  }
+
+  state.enemy = {
+    def: ch.enemy, hp: ch.enemy.hp, maxHp: ch.enemy.hp,
+    ki: 0, maxKi: ch.enemy.ki, formIdx:0,
+    lastMove: null, moveStreak: 0 // anti-spam: tracks repeats so the AI can't loop one move forever
+  };
+  // clear cached art form-keys so the new enemy's art draws even if a form name repeats
+  delete document.getElementById('e-portrait').dataset.form;
+  delete document.getElementById('e-avatar').dataset.form;
+
+  setScene(ch.env);
+  document.getElementById('log').innerHTML='';
+  logMsg(`${ch.enemy.name} appears! ${ch.text.split('.')[0]}.`, 'sys-line');
+  if(state.chapterIndex > 0){
+    const pct = Math.round((progressionMult()-1)*100);
+    logMsg(`${heroDef.name}'s battles have hardened them — all attacks now hit ${pct}% harder than when the journey began.`, 'sys-line');
+  }
+  state.moveActive = true;
+  renderBattle();
+  renderActions();
+  applyPosition();
+}
+
+function currentPlayerForm(){
+  const forms = state.player.def.forms;
+  let idx = 0;
+  forms.forEach((f,i)=>{ if(state.player.ki >= f.threshold) idx = i; });
+  state.player.formIdx = idx;
+  return forms[idx];
+}
+
+// Permanent growth from story progress — each chapter cleared makes every hit the
+// hero lands hit harder, on top of whatever transformation they're currently in.
+function progressionMult(){
+  return 1 + state.chapterIndex * 0.18;
+}
+function currentEnemyForm(){
+  const forms = state.enemy.def.forms;
+  let idx = 0;
+  forms.forEach((f,i)=>{ if(state.enemy.ki >= f.threshold) idx = i; });
+  state.enemy.formIdx = idx;
+  return forms[idx];
+}
+
+function renderBattle(){
+  const pForm = currentPlayerForm();
+  const eForm = currentEnemyForm();
+  const pLook = lookFor(state.player.def, pForm);
+  const eLook = lookFor(state.enemy.def, eForm);
+
+  document.getElementById('p-name').textContent = state.player.def.name;
+  document.getElementById('p-form').textContent = pForm.name;
+  document.getElementById('p-form').style.color = pForm.color;
+  updatePowerBadge();
+  document.getElementById('p-stage').classList.toggle('flying', !!state.player.flying);
+  const pPort = document.getElementById('p-portrait');
+  if(pPort.dataset.form !== pForm.name){
+    pPort.innerHTML = fighterBustSVG(pLook);
+    pPort.dataset.form = pForm.name;
+  }
+  pPort.style.color = pForm.color;
+  pPort.style.borderColor = pForm.threshold>0 ? pForm.color : 'rgba(255,255,255,.15)';
+  pPort.classList.toggle('glow', pForm.threshold>0);
+
+  document.getElementById('p-hp-txt').textContent = `${Math.max(0,Math.round(state.player.hp))}/${state.player.maxHp}`;
+  const pHpPct = Math.max(0,state.player.hp/state.player.maxHp*100);
+  const pHpBar = document.getElementById('p-hp-bar');
+  pHpBar.style.width = pHpPct+'%'; document.getElementById('p-hp-trail').style.width = pHpPct+'%';
+  pHpBar.classList.toggle('low', pHpPct<30);
+
+  document.getElementById('p-ki-txt').textContent = `${Math.round(state.player.ki)}/${state.player.maxKi}`;
+  document.getElementById('p-ki-bar').style.width = (state.player.ki/state.player.maxKi*100)+'%';
+
+  const tree = document.getElementById('p-tree');
+  tree.innerHTML='';
+  state.player.def.forms.forEach((f,i)=>{
+    const chip = document.createElement('div');
+    chip.className='tform-chip'+(state.player.ki>=f.threshold?' unlocked':'')+(i===state.player.formIdx?' active':'');
+    chip.textContent = f.name;
+    tree.appendChild(chip);
+  });
+
+  document.getElementById('e-name').textContent = state.enemy.def.name;
+  document.getElementById('e-form').textContent = eForm.name;
+  document.getElementById('e-form').style.color = eForm.color;
+  const ePort = document.getElementById('e-portrait');
+  if(ePort.dataset.form !== eForm.name){
+    ePort.innerHTML = fighterBustSVG(eLook);
+    ePort.dataset.form = eForm.name;
+  }
+  ePort.style.borderColor = eForm.threshold>0 ? eForm.color : 'rgba(255,255,255,.15)';
+  ePort.classList.toggle('glow', eForm.threshold>0);
+
+  document.getElementById('e-hp-txt').textContent = `${Math.max(0,Math.round(state.enemy.hp))}/${state.enemy.maxHp}`;
+  const eHpPct = Math.max(0,state.enemy.hp/state.enemy.maxHp*100);
+  const eHpBar = document.getElementById('e-hp-bar');
+  eHpBar.style.width = eHpPct+'%'; document.getElementById('e-hp-trail').style.width = eHpPct+'%';
+  eHpBar.classList.toggle('low', eHpPct<30);
+
+  document.getElementById('e-ki-txt').textContent = `${Math.round(state.enemy.ki)}/${state.enemy.maxKi}`;
+  document.getElementById('e-ki-bar').style.width = (state.enemy.ki/state.enemy.maxKi*100)+'%';
+
+  // sync the visual stage avatars (full-body art)
+  const pAvatar = document.getElementById('p-avatar');
+  if(pAvatar.dataset.form !== pForm.name){
+    pAvatar.innerHTML = fighterSVG(pLook);
+    pAvatar.dataset.form = pForm.name;
+  }
+  const pAura = document.getElementById('p-aura');
+  pAura.style.color = pForm.color;
+  pAura.classList.toggle('on', pForm.threshold>0);
+
+  const eAvatar = document.getElementById('e-avatar');
+  if(eAvatar.dataset.form !== eForm.name){
+    eAvatar.innerHTML = fighterSVG(eLook);
+    eAvatar.dataset.form = eForm.name;
+  }
+  const eAura = document.getElementById('e-aura');
+  eAura.style.color = eForm.color;
+  eAura.classList.toggle('on', eForm.threshold>0);
+}
+
+/* ---------- Stage animation helpers ---------- */
+function caption(text){
+  const c = document.getElementById('action-caption');
+  c.textContent = text;
+  c.classList.add('show');
+  setTimeout(()=>c.classList.remove('show'), 700);
+}
+function shakeArena(){
+  const a = document.getElementById('stage');
+  a.classList.remove('shake'); void a.offsetWidth; a.classList.add('shake');
+}
+/* Positions below are measured from the live fighters, so effects line up whether
+   a fighter is on the ground or in the air and at any window size. */
+function fighterPoint(side, yFrac){
+  const stage = document.getElementById('stage');
+  const av = document.getElementById(side==='player'?'p-avatar':'e-avatar');
+  const s = stage.getBoundingClientRect(), a = av.getBoundingClientRect();
+  return { x: a.left - s.left + a.width/2, y: a.top - s.top + a.height*yFrac };
+}
+function popDamage(targetSide, text, kind){
+  const stage = document.getElementById('stage');
+  const el = document.createElement('div');
+  el.className = 'dmg-float'+(kind==='heal'?' heal':'')+(kind==='miss'?' miss':'');
+  el.textContent = text;
+  const pt = fighterPoint(targetSide, 0.1);
+  el.style.left = (pt.x - 24)+'px';
+  el.style.top = pt.y+'px';
+  stage.appendChild(el);
+  setTimeout(()=>el.remove(), 1000);
+}
+function dodgeFx(){
+  const av = document.getElementById('p-avatar');
+  av.classList.remove('dodging'); void av.offsetWidth; av.classList.add('dodging');
+  setTimeout(()=>av.classList.remove('dodging'), 650);
+}
+function hitFlash(targetSide, big){
+  const av = document.getElementById(targetSide==='player'?'p-avatar':'e-avatar');
+  av.classList.remove('hit'); void av.offsetWidth; av.classList.add('hit');
+  setTimeout(()=>av.classList.remove('hit'), 400);
+  setPose(targetSide,'hit',420);
+  impactFx(targetSide, big);
+}
+function lunge(attackerSide){
+  const stage = document.getElementById('stage');
+  const el = document.getElementById(attackerSide==='player'?'p-stage':'e-stage');
+  const target = document.getElementById(attackerSide==='player'?'e-stage':'p-stage');
+  const a = el.getBoundingClientRect(), t = target.getBoundingClientRect();
+  // close the gap to the opponent, stopping just short of them
+  const gap = Math.abs((t.left + t.width/2) - (a.left + a.width/2));
+  const reach = Math.max(40, gap - a.width * 0.8) || 160;
+  // dive down (or climb up) to the opponent's height — only the hero ever flies
+  const flyPx = (stage.clientHeight || 300) * 0.30;
+  const heightOf = side => (state.player && side==='player') ? state.pos.y : 0;
+  const dive = (heightOf(attackerSide) - heightOf(attackerSide==='player'?'enemy':'player')) * flyPx;
+  el.style.setProperty('--lunge', Math.round(reach)+'px');
+  el.style.setProperty('--dive', Math.round(dive)+'px');
+  const cls = attackerSide==='player' ? 'attack-right' : 'attack-left';
+  el.classList.remove('attack-right','attack-left'); void el.offsetWidth; el.classList.add(cls);
+  setTimeout(()=>el.classList.remove(cls), 500);
+  setPose(attackerSide,'punch',420);
+}
+function fireOrb(attackerSide, big){
+  const stage = document.getElementById('stage');
+  const orb = document.createElement('div');
+  orb.className = 'ki-orb';
+  const from = fighterPoint(attackerSide, 0.42);
+  const to = fighterPoint(attackerSide==='player'?'enemy':'player', 0.42);
+  orb.style.left = (from.x - 14)+'px';
+  orb.style.top = (from.y - 14)+'px';
+  stage.appendChild(orb);
+  setPose(attackerSide,'blast',560);
+  fxBeam(from, to, beamColor(attackerSide), big?620:450, big?15:7);
+  if(big) orb.style.transform='scale(1.8)';
+  if(orb.animate){
+    orb.animate(
+      [{transform:'translate(0,0) scale(.6)'},{transform:`translate(${to.x-from.x}px,${to.y-from.y}px) scale(1.25)`}],
+      {duration:450, easing:'linear', fill:'forwards'}
+    );
+  }
+  setTimeout(()=>orb.remove(), 480);
+}
+function transformBurst(side){
+  const stage = document.getElementById('stage');
+  const pt = fighterPoint(side, 0.45);
+  const burst = document.createElement('div');
+  burst.className='burst';
+  burst.style.left = (pt.x - 8)+'px';
+  burst.style.top = (pt.y - 8)+'px';
+  stage.appendChild(burst);
+  setTimeout(()=>burst.remove(), 650);
+  fxRing(pt.x, pt.y, (side==='player'?currentPlayerForm():currentEnemyForm()).color, 120);
+  fxSpark(pt.x, pt.y, (side==='player'?currentPlayerForm():currentEnemyForm()).color, 40, 5, 700);
+  hitStop(90);
+  shakeArena();
+}
+
+
+/* ---------- FX engine: sparks, shockwave rings and energy beams drawn on a canvas over the stage ---------- */
+const FX = {cv:null, ctx:null, parts:[], rings:[], beams:[], last:0, amb:0};
+function beamColor(side){ const d = side==='player' ? state.player.def : state.enemy.def; return d.beam || '#ffd36b'; }
+function fxEnsure(){
+  if(!FX.cv){ FX.cv=document.getElementById('fx'); FX.ctx=FX.cv && FX.cv.getContext('2d'); }
+  if(!FX.ctx) return false;
+  const st=document.getElementById('stage'), dpr=Math.min(2, window.devicePixelRatio||1);
+  const w=st.clientWidth, h=st.clientHeight;
+  if(FX.cv.width!==Math.round(w*dpr) || FX.cv.height!==Math.round(h*dpr)){ FX.cv.width=Math.round(w*dpr); FX.cv.height=Math.round(h*dpr); }
+  FX.ctx.setTransform(dpr,0,0,dpr,0,0);
+  if(!FX.running){ FX.running=true; FX.last=performance.now(); requestAnimationFrame(fxLoop); }
+  return true;
+}
+function fxSpark(x,y,color,n,speed,life){
+  if(!fxEnsure()) return;
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2, v=(0.3+Math.random())*speed;
+    FX.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-speed*.25,age:0,life:life*(.5+Math.random()*.6),size:1+Math.random()*2.6,color,grav:.06});
+  }
+}
+function fxEmber(x,y,color){
+  if(!fxEnsure()) return;
+  FX.parts.push({x,y,vx:(Math.random()-.5)*.6,vy:-(.6+Math.random()*1.1),age:0,life:700+Math.random()*500,size:1+Math.random()*2,color,grav:-.004});
+}
+function fxRing(x,y,color,max){ if(fxEnsure()) FX.rings.push({x,y,color,max:max||110,age:0,life:420}); }
+function fxBeam(from,to,color,dur,w){ if(fxEnsure()) FX.beams.push({x1:from.x,y1:from.y,x2:to.x,y2:to.y,color,dur,w,age:0}); }
+function fxLoop(now){
+  const ctx=FX.ctx, st=document.getElementById('stage');
+  const dt=Math.min(50, now-FX.last); FX.last=now;
+  ctx.clearRect(0,0,st.clientWidth,st.clientHeight);
+  ctx.globalCompositeOperation='lighter';
+  // ambient embers rising off transformed fighters / fighters who are charging
+  FX.amb+=dt;
+  if(FX.amb>70 && state.player && state.enemy && document.getElementById('battle-screen').classList.contains('active')){
+    FX.amb=0;
+    [['player',currentPlayerForm()],['enemy',currentEnemyForm()]].forEach(([side,f])=>{
+      if(f.threshold>0 || document.getElementById(side==='player'?'p-avatar':'e-avatar').classList.contains('pose-charge')){
+        const pt=fighterPoint(side, 0.7+Math.random()*.25); fxEmber(pt.x+(Math.random()-.5)*40, pt.y, f.color);
+      }
+    });
+  }
+  // beams
+  FX.beams=FX.beams.filter(b=>{
+    b.age+=dt;
+    const p=Math.min(1,b.age/b.dur), fade=b.age>b.dur ? Math.max(0,1-(b.age-b.dur)/260) : 1;
+    if(fade<=0) return false;
+    const hx=b.x1+(b.x2-b.x1)*p, hy=b.y1+(b.y2-b.y1)*p;
+    const tp=Math.max(0,p-.55), tx=b.x1+(b.x2-b.x1)*tp, ty=b.y1+(b.y2-b.y1)*tp;
+    ctx.lineCap='round'; ctx.globalAlpha=.25*fade; ctx.strokeStyle=b.color; ctx.lineWidth=b.w*3.2;
+    ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(hx,hy); ctx.stroke();
+    ctx.globalAlpha=.7*fade; ctx.lineWidth=b.w*1.5; ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(hx,hy); ctx.stroke();
+    ctx.globalAlpha=fade; ctx.strokeStyle='#fff'; ctx.lineWidth=b.w*.55; ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(hx,hy); ctx.stroke();
+    if(p<1){ FX.parts.push({x:hx,y:hy,vx:(Math.random()-.5)*1.2,vy:(Math.random()-.5)*1.2,age:0,life:300,size:1+Math.random()*2,color:b.color,grav:0}); }
+    return true;
+  });
+  // rings
+  FX.rings=FX.rings.filter(r=>{
+    r.age+=dt; const p=r.age/r.life; if(p>=1) return false;
+    ctx.globalAlpha=(1-p)*.8; ctx.strokeStyle=r.color; ctx.lineWidth=4*(1-p)+1;
+    ctx.beginPath(); ctx.ellipse(r.x,r.y,r.max*p,r.max*p*.55,0,0,Math.PI*2); ctx.stroke();
+    return true;
+  });
+  // particles
+  FX.parts=FX.parts.filter(q=>{
+    q.age+=dt; if(q.age>=q.life) return false;
+    const k=dt/16; q.x+=q.vx*k; q.y+=q.vy*k; q.vy+=q.grav*k;
+    const a=1-q.age/q.life;
+    ctx.globalAlpha=a; ctx.fillStyle=q.color; ctx.beginPath(); ctx.arc(q.x,q.y,q.size*(.5+a*.6),0,Math.PI*2); ctx.fill();
+    return true;
+  });
+  ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over';
+  const active = FX.parts.length||FX.rings.length||FX.beams.length||document.getElementById('battle-screen').classList.contains('active');
+  if(active) requestAnimationFrame(fxLoop); else FX.running=false;
+}
+function impactFx(side, big){
+  if(!state.player || !state.enemy) return;
+  const attacker = side==='enemy' ? 'player' : 'enemy';
+  const col = beamColor(attacker);
+  const pt = fighterPoint(side, 0.42);
+  fxSpark(pt.x, pt.y, col, big?46:20, big?6:4, 600);
+  fxSpark(pt.x, pt.y, '#ffffff', big?14:7, big?7:5, 350);
+  fxRing(pt.x, pt.y, col, big?150:80);
+  hitStop(big?130:65);
+}
+function hitStop(ms){
+  const st=document.getElementById('stage');
+  st.classList.add('freeze'); clearTimeout(hitStop._t);
+  hitStop._t=setTimeout(()=>st.classList.remove('freeze'), ms);
+}
+function setPose(side, pose, ms){
+  const av=document.getElementById(side==='player'?'p-avatar':'e-avatar');
+  ['punch','blast','charge','hit'].forEach(n=>av.classList.remove('pose-'+n));
+  void av.offsetWidth; av.classList.add('pose-'+pose);
+  clearTimeout(av._poseT); av._poseT=setTimeout(()=>av.classList.remove('pose-'+pose), ms);
+}
+
+function toggleFullscreen(){
+  try{
+    if(!document.fullscreenElement){
+      const root = document.documentElement;
+      if(root.requestFullscreen) root.requestFullscreen();
+    } else if(document.exitFullscreen){
+      document.exitFullscreen();
+    }
+  }catch(e){ /* fullscreen can be blocked by the browser; the larger layout still works */ }
+}
+
+/* movement + flying live in the MOVEMENT CONTROLS section near the end of the script */
+
+function renderActions(){
+  const grid = document.getElementById('action-grid');
+  const pForm = currentPlayerForm();
+  const canUltimate = state.player.formIdx >= state.player.def.forms.length-1;
+  const locked = state.turnLock;
+  grid.innerHTML = `
+    <button class="act-btn" onclick="doAction('attack')" ${locked?'disabled':''}>👊 Strike <small>[Q]</small></button>
+    <button class="act-btn" onclick="doAction('kiblast')" ${locked?'disabled':''}>🔵 Ki Blast <small>[W]</small></button>
+    <button class="act-btn transform" onclick="doAction('focus')" ${locked?'disabled':''}>✨ Focus Ki <small>[E]</small></button>
+    <button class="act-btn ultimate" onclick="doAction('ultimate')" ${(locked||!canUltimate)?'disabled':''}>💥 ${state.player.def.ultimate} <small>[F]</small></button>
+    <button class="act-btn dodge" onclick="doAction('dodge')" ${(locked || !state.player.flying || state.player.dodgeCooldown>0 || state.player.ki<DODGE_KI_COST)?'disabled':''} title="Airborne only · costs ${DODGE_KI_COST} Ki · the next enemy attack misses · every other turn">🌀 Dodge${state.player.dodgeCooldown>0?' ('+state.player.dodgeCooldown+')':''} <small>[R]</small></button>
+    <button id="fly-btn" class="act-btn fly${state.player.flying?' airborne':''}" onclick="toggleFly()" ${locked?'disabled':''}>${state.player.flying?'⬇ Land':'🕊 Fly'}</button>
+  `;
+}
+
+/* ============================= COMBAT LOOP ============================= */
+function logMsg(text, cls){
+  const log = document.getElementById('log');
+  const p = document.createElement('p');
+  p.textContent = text;
+  if(cls) p.className = cls;
+  log.appendChild(p);
+  log.scrollTop = log.scrollHeight;
+}
+
+function flash(){
+  const f = document.getElementById('flash');
+  f.style.transition='none'; f.style.opacity='0.5';
+  requestAnimationFrame(()=>{ f.style.transition='opacity .4s'; f.style.opacity='0'; });
+}
+
+const DODGE_KI_COST = 6;
+function doAction(kind){
+  if(state.turnLock) return;
+  state.turnLock = true;
+  renderActions(); // grey out all buttons the instant any action is taken
+  const p = state.player, e = state.enemy;
+  const pForm = currentPlayerForm();
+
+  const pMult = progressionMult();
+
+  if(kind==='attack'){
+    const band = rangeBand();
+    const diveMult = (p.flying ? 1.15 : 1) * (band==='Close' ? 1.10 : 1); // dive momentum + point-blank bonus
+    const dmg = Math.max(2, Math.round(p.def.atk * pForm.mult * pMult * diveMult - e.def.def*0.5 + rnd(-3,4)));
+    e.hp -= dmg;
+    p.ki = Math.min(p.maxKi, p.ki + 4);
+    logMsg((p.flying ? `${p.def.name} swoops down with a Dive Strike for ${dmg} damage!`
+                      : `${p.def.name} strikes for ${dmg} damage!`) + (band==='Close' ? ' (point-blank!)' : ''), 'player-line');
+    caption(p.flying ? 'DIVE STRIKE!' : 'STRIKE!');
+    lunge('player');
+    setTimeout(()=>{ hitFlash('enemy'); popDamage('enemy', '-'+dmg); }, 220);
+  } else if(kind==='kiblast'){
+    if(p.ki < 10){ logMsg('Not enough Ki to fire a blast!', 'sys-line'); state.turnLock=false; renderActions(); return; }
+    p.ki -= 10;
+    const dmg = Math.max(3, Math.round(p.def.atk*1.5*pForm.mult*pMult - e.def.def*0.4 + rnd(-2,5)));
+    e.hp -= dmg;
+    logMsg(`${p.def.name} fires a Ki Blast for ${dmg} damage!`, 'player-line');
+    caption('KI BLAST!');
+    fireOrb('player');
+    setTimeout(()=>{ hitFlash('enemy'); popDamage('enemy', '-'+dmg); shakeArena(); }, 460);
+  } else if(kind==='dodge'){
+    // Active dodge: only possible in the air. Guarantees the enemy's next attack (strike OR blast) misses.
+    if(!p.flying){ logMsg('You need to be airborne to dodge — take off first (Fly button or ↑).', 'sys-line'); state.turnLock=false; renderActions(); return; }
+    if(p.dodgeCooldown > 0){ logMsg('You can\'t dodge again so soon — catch your breath for a turn.', 'sys-line'); state.turnLock=false; renderActions(); return; }
+    if(p.ki < DODGE_KI_COST){ logMsg(`Not enough Ki to dodge (needs ${DODGE_KI_COST}).`, 'sys-line'); state.turnLock=false; renderActions(); return; }
+    p.ki -= DODGE_KI_COST;
+    p.dodgeArmed = true;
+    p.dodgeCooldown = 2; // counts down once per enemy turn -> usable every other turn
+    logMsg(`${p.def.name} readies an evasive dash — the next attack won't land!`, 'player-line');
+    caption('EVASIVE STANCE!');
+  } else if(kind==='focus'){
+    const gain = Math.round((18 + rnd(0,6)) * (p.flying ? 0.7 : 1)); // harder to concentrate while airborne
+    p.ki = Math.min(p.maxKi, p.ki + gain);
+    logMsg(`${p.def.name} focuses inner power! Ki rises by ${gain}.`, 'player-line');
+    setPose('player','charge',1000);
+    caption('FOCUSING KI...');
+    { const pt=fighterPoint('player',.55); fxRing(pt.x,pt.y,pForm.color,90); }
+    const newForm = currentPlayerForm();
+    if(newForm.name !== pForm.name){
+      logMsg(`⚡ TRANSFORMATION! ${p.def.name} ascends to ${newForm.name}!`, 'sys-line');
+      flash();
+      setTimeout(()=>{ caption('TRANSFORMATION!'); transformBurst('player'); }, 150);
+    }
+  } else if(kind==='ultimate'){
+    if(p.ki < p.maxKi*0.6){ logMsg('Ki too low to unleash the ultimate attack!', 'sys-line'); state.turnLock=false; renderActions(); return; }
+    p.ki -= p.maxKi*0.6;
+    const dmg = Math.max(10, Math.round(p.def.atk*3*pForm.mult*pMult - e.def.def*0.3 + rnd(0,10)));
+    e.hp -= dmg;
+    logMsg(`💥 ${p.def.name} unleashes ${p.def.ultimate} for ${dmg} damage!!`, 'sys-line');
+    flash();
+    caption(p.def.ultimate.toUpperCase()+'!');
+    fireOrb('player', true);
+    setTimeout(()=>{ hitFlash('enemy', true); popDamage('enemy', '-'+dmg); shakeArena(); }, 520);
+  }
+
+  renderBattle();
+
+  if(e.hp <= 0){
+    e.hp = 0; renderBattle();
+    logMsg(`${e.def.name} is defeated!`, 'sys-line');
+    state.turnLock = false;
+    setTimeout(chapterVictory, 900);
+    return;
+  }
+
+  setTimeout(enemyTurn, kind==='ultimate' ? 1300 : 700);
+}
+
+// Picks the enemy's move for this turn, then breaks it out of any streak so
+// no enemy can spam the same move (gather / blast / attack) more than twice in a row.
+function decideEnemyMove(e){
+  const canGather = e.ki < e.maxKi;
+  const canBlast = e.ki >= 15;
+
+  const roll = Math.random();
+  let move = (roll < 0.3 && canGather) ? 'gather'
+            : (canBlast && Math.random() < 0.4) ? 'blast'
+            : 'attack';
+
+  const MAX_STREAK = 2;
+  if(move === e.lastMove && e.moveStreak >= MAX_STREAK){
+    // force variety: fall back through the other options the enemy can currently use
+    const alternatives = ['attack', 'blast', 'gather'].filter(m=>{
+      if(m === move) return false;
+      if(m === 'gather') return canGather;
+      if(m === 'blast') return canBlast;
+      return true; // 'attack' is always available
+    });
+    move = alternatives.length ? alternatives[rnd(0, alternatives.length-1)] : 'attack';
+  }
+
+  e.moveStreak = (move === e.lastMove) ? e.moveStreak + 1 : 1;
+  e.lastMove = move;
+  return move;
+}
+
+function enemyTurn(){
+  const p = state.player, e = state.enemy;
+  const eForm = currentEnemyForm();
+  const move = decideEnemyMove(e);
+
+  const armedDodge = !!p.dodgeArmed;
+  p.dodgeArmed = false;
+  if(p.dodgeCooldown > 0) p.dodgeCooldown--;
+
+  if(move === 'gather'){
+    if(armedDodge) logMsg(`${p.def.name}'s evasive dash wasn't needed this turn.`, 'player-line');
+    const gain = 20 + rnd(0,8);
+    e.ki = Math.min(e.maxKi, e.ki + gain);
+    logMsg(`${e.def.name} gathers energy! Ki rises by ${gain}.`, 'enemy-line');
+    caption(e.def.name.toUpperCase()+' GATHERS POWER');
+    setPose('enemy','charge',1000);
+    const newForm = currentEnemyForm();
+    if(newForm.name !== eForm.name){
+      logMsg(`⚡ ${e.def.name} transforms into ${newForm.name}!`, 'sys-line');
+      flash();
+      setTimeout(()=>{ caption('ENEMY TRANSFORMATION!'); transformBurst('enemy'); }, 150);
+    }
+    renderBattle();
+    state.turnLock = false;
+    renderActions();
+  } else {
+    const useBlast = move === 'blast';
+    const mult = useBlast ? 1.6 : 1;
+    if(useBlast) e.ki -= 15;
+
+    if(armedDodge){
+      logMsg(`${p.def.name} dashes aside — ${e.def.name}'s ${useBlast?'energy blast':'strike'} hits nothing but air!`, 'player-line');
+      caption('PERFECT DODGE!');
+      dodgeFx();
+      if(useBlast){ fireOrb('enemy'); } else { lunge('enemy'); }
+      setTimeout(()=>{ popDamage('player', 'DODGED', 'miss'); finishEnemyTurn(); }, useBlast ? 460 : 220);
+      return;
+    }
+
+    // Airborne heroes weave around melee strikes, and a hero kept at long range is harder to reach.
+    // (Energy blasts are too fast to dodge either way.) The two chances stack.
+    const missChance = 1 - (1 - (p.flying ? 0.4 : 0)) * (1 - (rangeBand()==='Far' ? 0.2 : 0));
+    if(!useBlast && missChance > 0 && Math.random() < missChance){
+      logMsg(p.flying ? `${p.def.name} weaves through the air — ${e.def.name}'s strike misses!`
+                      : `${p.def.name} keeps their distance — ${e.def.name}'s strike misses!`, 'player-line');
+      caption('DODGED!');
+      lunge('enemy');
+      setTimeout(()=>{ popDamage('player', 'MISS', 'miss'); finishEnemyTurn(); }, 220);
+      return;
+    }
+
+    const dmg = Math.max(2, Math.round(e.def.atk*mult*currentEnemyForm().mult - p.def.def*0.5 + rnd(-3,4)));
+    p.hp -= dmg;
+    logMsg(`${e.def.name} ${useBlast?'unleashes an energy blast':'attacks'} for ${dmg} damage!`, 'enemy-line');
+    caption(useBlast ? 'ENEMY KI BLAST!' : 'ENEMY STRIKE!');
+    if(useBlast){
+      fireOrb('enemy');
+      setTimeout(()=>{ hitFlash('player'); popDamage('player','-'+dmg); shakeArena(); finishEnemyTurn(); }, 460);
+    } else {
+      lunge('enemy');
+      setTimeout(()=>{ hitFlash('player'); popDamage('player','-'+dmg); finishEnemyTurn(); }, 220);
+    }
+    return;
+  }
+}
+
+function finishEnemyTurn(){
+  const p = state.player;
+  renderBattle();
+
+  if(p.hp <= 0){
+    p.hp = 0; renderBattle();
+    logMsg(`${p.def.name} has fallen...`, 'sys-line');
+    setTimeout(gameOver, 900);
+    return;
+  }
+  state.turnLock = false;
+  renderActions();
+}
+
+function rnd(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+/* ============================= CHAPTER PROGRESSION ============================= */
+function chapterVictory(){
+  state.moveActive = false; clearMoveInput();
+  state.chapterIndex++;
+  if(state.chapterIndex >= CHAPTERS.length){
+    victoryFinal();
+  } else {
+    loadChapterStory();
+  }
+}
+
+function victoryFinal(){
+  document.getElementById('end-icon').textContent='🏆';
+  document.getElementById('end-title').textContent='The Universe is Saved';
+  document.getElementById('end-text').textContent =
+    `${state.player.def.name} has overcome every rival, ascending through every form of power, `+
+    `and stands victorious as peace returns to the world. Your legend as a true Saiyan warrior is complete.`;
+  goTo('end-screen');
+}
+
+function gameOver(){
+  state.moveActive = false; clearMoveInput();
+  document.getElementById('end-icon').textContent='💀';
+  document.getElementById('end-title').textContent='Defeated...';
+  document.getElementById('end-text').textContent =
+    `${state.player.def.name} falls in battle against ${state.enemy.def.name}. The story ends here — but every warrior `+
+    `gets back up. Return to the title screen to try again.`;
+  goTo('end-screen');
+}
+
+/* ============================= MOVEMENT CONTROLS ============================= */
+/* Keyboard:  arrow keys move (↑ up/fly, ↓ down, → forward, ← back)
+   Touch:     the on-screen joystick (shown on phones/tablets)
+   Height above the ground counts as flying; distance sets the range band. */
+const MOVE_SPEED_X = 0.55;   // fraction of the arena per second
+const MOVE_SPEED_Y = 0.9;
+const moveInput = {up:false, down:false, fwd:false, back:false, jx:0, jy:0};
+let moveMetrics = null;
+let moveLast = 0;
+
+function clampNum(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+
+function clearMoveInput(){
+  moveInput.up = moveInput.down = moveInput.fwd = moveInput.back = false;
+  moveInput.jx = moveInput.jy = 0;
+  const knob = document.getElementById('joy-knob');
+  if(knob && knob.style) knob.style.transform = 'translate(0px,0px)';
+}
+
+// Close = point-blank (+10% Strike). Far = hard to reach (+20% chance enemy strikes miss).
+function rangeBand(){
+  const x = state.pos.x;
+  return x > 0.66 ? 'Close' : (x < 0.25 ? 'Far' : 'Mid');
+}
+
+function powerBadgeHTML(){
+  const parts = [];
+  const pMultNow = progressionMult();
+  if(pMultNow > 1) parts.push(`Power <span class="up">+${Math.round((pMultNow-1)*100)}%</span>`);
+  if(state.player && state.player.flying) parts.push(`<span class="up">Airborne</span>`);
+  const band = rangeBand();
+  parts.push(`Range <span class="${band==='Mid'?'':'up'}">${band}${band==='Close'?' · +10% Strike':band==='Far'?' · +20% dodge':''}</span>`);
+  return parts.join(' · ');
+}
+function updatePowerBadge(){
+  const el = document.getElementById('p-power');
+  if(el) el.innerHTML = powerBadgeHTML();
+}
+
+function measureMove(){
+  const stage = document.getElementById('stage'), me = document.getElementById('p-stage');
+  return { W: stage.clientWidth || 0, w: me.offsetWidth || 0 };
+}
+
+// Called whenever the hero crosses the airborne threshold (with hysteresis so hovering near it doesn't flicker)
+function onFlyingChanged(){
+  const p = state.player;
+  document.getElementById('p-stage').classList.toggle('flying', !!p.flying);
+  const btn = document.getElementById('fly-btn');
+  if(btn){
+    btn.textContent = p.flying ? '⬇ Land' : '🕊 Fly';
+    btn.classList.toggle('airborne', !!p.flying);
+  }
+  if(p.flying){
+    if(!state.flyHintShown){
+      state.flyHintShown = true;
+      logMsg(`${p.def.name} takes to the sky! Enemy strikes miss 40% of the time and your Strike becomes a +15% Dive Strike — but focusing Ki is 30% slower in the air.`, 'player-line');
+    } else {
+      logMsg(`${p.def.name} takes to the sky!`, 'player-line');
+    }
+    caption('TAKING FLIGHT!');
+  } else {
+    logMsg(`${p.def.name} lands back on the ground.`, 'player-line');
+    caption('LANDING');
+  }
+  updatePowerBadge();
+}
+
+// Writes the hero's position into the page. Horizontal travel is limited so the hero can
+// never walk through the enemy, whatever the screen size.
+function applyPosition(){
+  const p = state.player;
+  if(!p) return;
+  // measure once the arena is actually on screen (it has no size while its screen is hidden)
+  if(!moveMetrics || !moveMetrics.W) moveMetrics = measureMove();
+  const W = moveMetrics.W || 1000, w = moveMetrics.w || 100;
+  const minLeft = W * 0.02;
+  const maxLeft = (W - W * 0.12 - w) - w * 1.05;
+  const el = document.getElementById('p-stage');
+  el.style.left = Math.round(minLeft + state.pos.x * Math.max(0, maxLeft - minLeft)) + 'px';
+  el.style.setProperty('--py', state.pos.y.toFixed(3));
+  const stg = document.getElementById('stage'); if(stg) stg.style.setProperty('--cam', (state.pos.x*2-1).toFixed(3));
+
+  if(!p.flying && state.pos.y > 0.30){ p.flying = true; onFlyingChanged(); }
+  else if(p.flying && state.pos.y < 0.15){ p.flying = false; onFlyingChanged(); }
+
+  const band = rangeBand();
+  if(band !== state.lastBand){ state.lastBand = band; updatePowerBadge(); }
+}
+
+// One step of movement (dt in seconds). Exported separately from the animation loop so it can be tested.
+function stepMovement(dt){
+  if(!state.moveActive || !state.player || !(dt > 0)) return;
+  const vx = clampNum((moveInput.fwd?1:0) - (moveInput.back?1:0) + moveInput.jx, -1, 1);
+  let   vy = clampNum((moveInput.up?1:0) - (moveInput.down?1:0) - moveInput.jy, -1, 1);
+
+  if(vy !== 0){
+    state.flyTarget = null;                         // manual control cancels the Fly button's auto-pilot
+  } else if(state.flyTarget !== null){
+    const d = state.flyTarget - state.pos.y;
+    if(Math.abs(d) < 0.005){ state.pos.y = state.flyTarget; state.flyTarget = null; }
+    else { state.pos.y += clampNum(d, -MOVE_SPEED_Y*dt, MOVE_SPEED_Y*dt); }
+  }
+  if(vx !== 0) state.pos.x = clampNum(state.pos.x + vx * MOVE_SPEED_X * dt, 0, 1);
+  if(vy !== 0) state.pos.y = clampNum(state.pos.y + vy * MOVE_SPEED_Y * dt, 0, 1);
+  applyPosition();
+}
+
+function moveLoop(t){
+  requestAnimationFrame(moveLoop);
+  const now = t || 0;
+  const dt = clampNum((now - moveLast) / 1000, 0, 0.05);
+  moveLast = now;
+  stepMovement(dt);
+}
+
+// The Fly button: auto-pilot up to full height, or back down to the ground
+function toggleFly(){
+  if(state.turnLock || !state.player || !state.moveActive) return;
+  state.flyTarget = state.player.flying ? 0 : 1;
+}
+
+const KEY_TO_DIR = { arrowup:'up', arrowdown:'down', arrowright:'fwd', arrowleft:'back' };
+// Action hotkeys: Q strike · W ki blast · E focus ki · R dodge (in the air) · F ultimate
+const KEY_TO_ACTION = { q:'attack', keyq:'attack', w:'kiblast', keyw:'kiblast', e:'focus', keye:'focus',
+                        r:'dodge', keyr:'dodge', f:'ultimate', keyf:'ultimate' };
+function dirForKey(e){
+  return KEY_TO_DIR[String(e.key||'').toLowerCase()] || KEY_TO_DIR[String(e.code||'').toLowerCase()] || null;
+}
+
+function initControls(){
+  if(typeof window === 'undefined' || typeof document.addEventListener !== 'function') return;
+
+  const touchy = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  if(touchy && document.body) document.body.classList.add('touch');
+
+  window.addEventListener('keydown', e=>{
+    if(e.ctrlKey || e.metaKey || e.altKey) return;
+    const act = KEY_TO_ACTION[String(e.key||'').toLowerCase()] || KEY_TO_ACTION[String(e.code||'').toLowerCase()];
+    if(act){
+      if(state.moveActive && !e.repeat && !state.turnLock){
+        const maxForm = state.player && state.player.formIdx >= state.player.def.forms.length-1;
+        if(act!=='ultimate' || maxForm) doAction(act);
+        else logMsg('Reach your final form to unleash the ultimate!', 'sys-line');
+      }
+      return;
+    }
+    const dir = dirForKey(e);
+    if(!dir) return;
+    if(state.moveActive) e.preventDefault();
+    moveInput[dir] = true;
+  });
+  window.addEventListener('keyup', e=>{
+    const dir = dirForKey(e);
+    if(dir) moveInput[dir] = false;
+  });
+  window.addEventListener('blur', clearMoveInput);
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) clearMoveInput(); });
+  window.addEventListener('resize', ()=>{ moveMetrics = null; if(state.player) applyPosition(); });
+
+  // ----- on-screen joystick -----
+  const base = document.getElementById('joy-base'), knob = document.getElementById('joy-knob');
+  if(base && knob && base.addEventListener){
+    let active = false;
+    const setFrom = e=>{
+      const r = base.getBoundingClientRect();
+      const R = r.width/2 - knob.offsetWidth/2;
+      let dx = e.clientX - (r.left + r.width/2), dy = e.clientY - (r.top + r.height/2);
+      const mag = Math.hypot(dx, dy);
+      if(mag > R){ dx = dx/mag*R; dy = dy/mag*R; }
+      knob.style.transform = `translate(${dx}px,${dy}px)`;
+      const nx = dx/R, ny = dy/R;
+      const dead = Math.hypot(nx, ny) < 0.2;       // small dead-zone so a resting thumb doesn't drift
+      moveInput.jx = dead ? 0 : nx;
+      moveInput.jy = dead ? 0 : ny;
+    };
+    base.addEventListener('pointerdown', e=>{ active = true; try{ base.setPointerCapture(e.pointerId); }catch(_){} setFrom(e); e.preventDefault(); });
+    base.addEventListener('pointermove', e=>{ if(active) setFrom(e); });
+    const end = ()=>{ active = false; moveInput.jx = moveInput.jy = 0; knob.style.transform = 'translate(0px,0px)'; };
+    base.addEventListener('pointerup', end);
+    base.addEventListener('pointercancel', end);
+  }
+
+  requestAnimationFrame(moveLoop);
+}
+initControls();
+</script>
+</body>
+</html>
