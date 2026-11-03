@@ -1230,7 +1230,7 @@ function fxRing(x,y,color,max){ if(fxEnsure()) FX.rings.push({x,y,color,max:max|
 function fxBeam(from,to,color,dur,w){ if(fxEnsure()) FX.beams.push({x1:from.x,y1:from.y,x2:to.x,y2:to.y,color,dur,w,age:0}); }
 function fxLoop(now){
   const ctx=FX.ctx, st=document.getElementById('stage');
-  const dt=Math.min(50, now-FX.last); FX.last=now;
+  const dt=Math.max(0, Math.min(50, now-FX.last)); FX.last=now;
   ctx.clearRect(0,0,st.clientWidth,st.clientHeight);
   ctx.globalCompositeOperation='lighter';
   // ambient embers rising off transformed fighters / fighters who are charging
@@ -1261,7 +1261,7 @@ function fxLoop(now){
   FX.rings=FX.rings.filter(r=>{
     r.age+=dt; const p=r.age/r.life; if(p>=1) return false;
     ctx.globalAlpha=(1-p)*.8; ctx.strokeStyle=r.color; ctx.lineWidth=4*(1-p)+1;
-    ctx.beginPath(); ctx.ellipse(r.x,r.y,r.max*p,r.max*p*.55,0,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(r.x,r.y,Math.max(0.1,r.max*p),Math.max(0.1,r.max*p*.55),0,0,Math.PI*2); ctx.stroke();
     return true;
   });
   // particles
