@@ -868,6 +868,7 @@ const CHAPTERS = [
 let state = {
   heroId:null,
   chapterIndex:0,
+  phase:'menu', // menu | story | battle | won | over — chapters only advance through this sequence
   player:null,
   enemy:null,
   playerFormIdx:0,
@@ -943,13 +944,14 @@ renderRoster();
 let navLock = false; // guards chapter/story transitions against rapid double-taps
 
 function startStory(){
-  if(navLock) return;
+  if(navLock || state.phase!=='menu' || !state.heroId) return;
   navLock = true;
   state.chapterIndex = 0;
   loadChapterStory();
   navLock = false;
 }
 function loadChapterStory(){
+  state.phase = 'story';
   const ch = CHAPTERS[state.chapterIndex];
   document.getElementById('chapter-tag').textContent = 'Chapter ' + (state.chapterIndex+1) + ' of ' + CHAPTERS.length;
   document.getElementById('story-title').textContent = ch.title;
@@ -958,7 +960,7 @@ function loadChapterStory(){
   goTo('story-screen');
 }
 function continueFromStory(){
-  if(navLock) return;
+  if(navLock || state.phase!=='story') return;
   navLock = true;
   setupBattle();
   goTo('battle-screen');
@@ -972,6 +974,7 @@ function setupBattle(){
   const heroDef = HEROES[state.heroId];
   const ch = CHAPTERS[state.chapterIndex];
   state.turnLock = false; // safety: never let a stuck lock carry into a new fight
+  state.phase = 'battle';
   state.pos = {x:0.45, y:0}; state.flyTarget = null; state.lastBand = null; state.flyHintShown = false;
   clearMoveInput();
 
@@ -1349,7 +1352,7 @@ function flash(){
 
 const DODGE_KI_COST = 6;
 function doAction(kind){
-  if(state.turnLock) return;
+  if(state.turnLock || state.phase!=='battle') return;
   state.turnLock = true;
   renderActions(); // grey out all buttons the instant any action is taken
   const p = state.player, e = state.enemy;
@@ -1417,7 +1420,7 @@ function doAction(kind){
   if(e.hp <= 0){
     e.hp = 0; renderBattle();
     logMsg(`${e.def.name} is defeated!`, 'sys-line');
-    state.turnLock = false;
+    state.phase = 'won'; // locks every action until the next chapter's story screen
     setTimeout(chapterVictory, 900);
     return;
   }
@@ -1454,6 +1457,7 @@ function decideEnemyMove(e){
 }
 
 function enemyTurn(){
+  if(state.phase!=='battle') return;
   const p = state.player, e = state.enemy;
   const eForm = currentEnemyForm();
   const move = decideEnemyMove(e);
@@ -1520,13 +1524,14 @@ function enemyTurn(){
 }
 
 function finishEnemyTurn(){
+  if(state.phase!=='battle') return;
   const p = state.player;
   renderBattle();
 
   if(p.hp <= 0){
     p.hp = 0; renderBattle();
     logMsg(`${p.def.name} has fallen...`, 'sys-line');
-    setTimeout(gameOver, 900);
+    setTimeout(()=>{ state.phase='over'; gameOver2(); }, 900);
     return;
   }
   state.turnLock = false;
@@ -1537,6 +1542,8 @@ function rnd(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
 
 /* ============================= CHAPTER PROGRESSION ============================= */
 function chapterVictory(){
+  if(state.phase!=='won') return; // only one victory per fight — no double-advancing
+  state.phase = 'won-done';
   state.moveActive = false; clearMoveInput();
   state.chapterIndex++;
   if(state.chapterIndex >= CHAPTERS.length){
@@ -1555,7 +1562,8 @@ function victoryFinal(){
   goTo('end-screen');
 }
 
-function gameOver(){
+function gameOver(){ gameOver2(); }
+function gameOver2(){
   state.moveActive = false; clearMoveInput();
   document.getElementById('end-icon').textContent='💀';
   document.getElementById('end-title').textContent='Defeated...';
