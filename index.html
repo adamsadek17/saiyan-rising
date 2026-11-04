@@ -521,7 +521,7 @@
     <div class="shop-box">
       <h2>Unlock Shop</h2>
       <div class="sp-bal">Unlock points: <b id="sp-bal">0</b> SP</div>
-      <p class="section-desc" style="margin:0 0 4px;text-align:center;">Earn SP from every fight (more for a higher rank), achievements and finishing the story. Unlocks stay on this device.</p>
+      <p class="section-desc" style="margin:0 0 4px;text-align:center;">Earn SP from every fight (more for a higher rank), achievements and finishing the story (a full run earns roughly 80-100 SP). Unlocks stay on this device.</p>
       <h3>Attacks</h3><div id="shop-attacks"></div>
       <h3>Characters</h3><div id="shop-heroes"></div>
       <button class="menu-btn" onclick="location.reload()">Back</button>
@@ -1861,7 +1861,7 @@ function achieve(id){
   ACH_DONE[id] = 1; saveJSON('sr-ach', ACH_DONE);
   let t = document.getElementById('toast');
   if(!t){ t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
-  const n = document.createElement('div'); n.className = 'toast-item'; n.innerHTML = `🏆 <b>${ACHS[id][0]}</b><small>${ACHS[id][1]} · +20 SP</small>`; awardSP(20);
+  const n = document.createElement('div'); n.className = 'toast-item'; n.innerHTML = `🏆 <b>${ACHS[id][0]}</b><small>${ACHS[id][1]} · +5 SP</small>`; awardSP(5);
   t.appendChild(n); setTimeout(()=>n.remove(), 3600); sfx('win');
 }
 function showAchievements(){
@@ -1884,7 +1884,7 @@ function gradeFight(){
   if(st.turns <= par && dmgPct < .25) rank = 'S'; else if(st.turns <= par+4 && dmgPct < .55) rank = 'A'; else if(dmgPct < .9) rank = 'B';
   const pts = 2 + ({S:2, A:1, B:0, C:0})[rank];
   state.points += pts;
-  const sp = 25 + ch*5 + ({S:40, A:25, B:10, C:0})[rank]; awardSP(sp);
+  const sp = 8 + ch*2 + ({S:12, A:8, B:3, C:0})[rank]; awardSP(sp);
   PROF.fights++; PROF.wins++; if(rank==='S') PROF.s++; PROF.best = Math.max(PROF.best, st.maxCombo); saveJSON('sr-prof', PROF);
   achieve('first_win');
   if(st.damageTaken === 0) achieve('untouchable');
@@ -2305,7 +2305,7 @@ function victoryFinal(){
   document.getElementById('end-text').textContent =
     `${state.player.def.name} has overcome every rival, ascending through every form of power, `+
     `and stands victorious as peace returns to the world. Your legend as a true Saiyan warrior is complete.`;
-  { const sp = 100 + (state.difficulty==='hard' ? 50 : 0); awardSP(sp); document.getElementById('end-text').textContent += ` You earned ${sp} unlock points (SP) — spend them in the Unlock Shop.`; }
+  { const sp = 30 + (state.difficulty==='hard' ? 20 : 0); awardSP(sp); document.getElementById('end-text').textContent += ` You earned ${sp} unlock points (SP) — spend them in the Unlock Shop.`; }
   goTo('end-screen');
 }
 
@@ -2318,7 +2318,7 @@ function gameOver2(){
   document.getElementById('end-text').textContent =
     `${state.player.def.name} falls in battle against ${state.enemy.def.name}. The story ends here — but every warrior `+
     `gets back up. Return to the title screen to try again.`;
-  { const sp = 10*(state.chapterIndex+1); awardSP(sp); document.getElementById('end-text').textContent += ` You still earned ${sp} unlock points (SP).`; }
+  { const sp = 3*(state.chapterIndex+1); awardSP(sp); document.getElementById('end-text').textContent += ` You still earned ${sp} unlock points (SP).`; }
   goTo('end-screen');
 }
 
