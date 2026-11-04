@@ -270,8 +270,6 @@
   .shop-row>div:nth-child(2){flex:1;min-width:0;}
   .shop-row small{display:block;color:var(--text-dim);font-size:.72rem;}
   .shop-buy{padding:7px 12px;border-radius:8px;border:1px solid var(--ki-gold);background:#141a30;color:var(--ki-gold);cursor:pointer;white-space:nowrap;}
-  .buy-col{display:flex;flex-direction:column;gap:6px;}
-  .shop-buy.coin{border-color:#7fd6ff;color:#7fd6ff;}
   .shop-buy:disabled{opacity:.4;cursor:default;}
   .shop-row.owned .shop-buy{border-color:#7dffb0;color:#7dffb0;}
   .act-btn.solar{border-color:#fff0a0;color:#fff0a0;} .act-btn.senzu{border-color:#7dffb0;color:#7dffb0;} .act-btn.meteor{border-color:#ff9a5a;color:#ff9a5a;}
@@ -522,8 +520,8 @@
   <div class="screen" id="shop-screen">
     <div class="shop-box">
       <h2>Unlock Shop</h2>
-      <div class="sp-bal">Unlock points: <b id="sp-bal">0</b> SP &nbsp;·&nbsp; Coins: <b id="coin-bal">0</b> 🪙</div>
-      <p class="section-desc" style="margin:0 0 4px;text-align:center;">Pay with SP (earned from ranks, achievements and finishing the story) or with coins (earned from every fight, and a bigger pile for a better rank). Coin prices are double. Everything stays on this device.</p>
+      <div class="sp-bal">Unlock points: <b id="sp-bal">0</b> SP</div>
+      <p class="section-desc" style="margin:0 0 4px;text-align:center;">Earn SP from every fight (more for a higher rank), achievements and finishing the story. Unlocks stay on this device.</p>
       <h3>Attacks</h3><div id="shop-attacks"></div>
       <h3>Characters</h3><div id="shop-heroes"></div>
       <button class="menu-btn" onclick="location.reload()">Back</button>
@@ -1887,20 +1885,19 @@ function gradeFight(){
   const pts = 2 + ({S:2, A:1, B:0, C:0})[rank];
   state.points += pts;
   const sp = 25 + ch*5 + ({S:40, A:25, B:10, C:0})[rank]; awardSP(sp);
-  const coins = Math.round(state.enemy.maxHp*.4) + ({S:80, A:50, B:25, C:0})[rank] + st.maxCombo*5; awardCoins(coins);
   PROF.fights++; PROF.wins++; if(rank==='S') PROF.s++; PROF.best = Math.max(PROF.best, st.maxCombo); saveJSON('sr-prof', PROF);
   achieve('first_win');
   if(st.damageTaken === 0) achieve('untouchable');
   if(p.hp/p.maxHp < .15) achieve('clutch');
   if(rank === 'S') achieve('srank');
   if(state.lastKillKind === 'ultimate') achieve('finisher');
-  return {rank, pts, sp, coins, par, turns:st.turns, dmg:st.damageTaken, combo:st.maxCombo};
+  return {rank, pts, sp, par, turns:st.turns, dmg:st.damageTaken, combo:st.maxCombo};
 }
 function showTraining(res){
   state.phase = 'train';
   const hr = document.getElementById('tr-rank'); hr.textContent = res.rank; hr.className = 'rank-letter r'+res.rank;
   document.getElementById('tr-stats').innerHTML =
-    `<div><b>${res.turns}</b><small>turns (par ${res.par})</small></div><div><b>${res.dmg}</b><small>damage taken</small></div><div><b>${res.combo}</b><small>best combo</small></div><div><b>+${res.pts}</b><small>training points</small></div><div><b>+${res.sp}</b><small>unlock points (SP)</small></div><div><b>+${res.coins}</b><small>coins 🪙</small></div>`;
+    `<div><b>${res.turns}</b><small>turns (par ${res.par})</small></div><div><b>${res.dmg}</b><small>damage taken</small></div><div><b>${res.combo}</b><small>best combo</small></div><div><b>+${res.pts}</b><small>training points</small></div><div><b>+${res.sp}</b><small>unlock points (SP)</small></div>`;
   renderTraining();
   goTo('train-screen');
 }
@@ -1946,33 +1943,27 @@ const SHOP_ATTACKS = [
   {id:'senzu',  name:'Senzu Bean',    ico:'🫘', cost:180, desc:'Restores 35% of your HP, once per fight. Key C.'},
   {id:'meteor', name:'Meteor Strike', ico:'☄', cost:260, desc:'Heavy dive-bomb for 2.3x damage (25 Ki, 2-turn cooldown). Key V.'}
 ];
-function awardCoins(n){ META.coins = (META.coins||0) + n; saveMeta(); }
-function coinCost(sp){ return sp*2; }
 function awardSP(n){ META.sp = (META.sp||0) + n; saveMeta(); }
 function openShop(){ renderShop(); goTo('shop-screen'); }
 function renderShop(){
   document.getElementById('sp-bal').textContent = META.sp || 0;
-  document.getElementById('coin-bal').textContent = META.coins || 0;
   const row = (id, ico, name, desc, cost)=>{
-    const owned = !!META.unlocked[id], canSP = (META.sp||0) >= cost, canC = (META.coins||0) >= coinCost(cost);
-    const btns = owned ? `<button class="shop-buy" disabled>Owned</button>`
-      : `<div class="buy-col"><button class="shop-buy" onclick="buyUnlock('${id}','sp')" ${canSP?'':'disabled'}>${cost} SP</button><button class="shop-buy coin" onclick="buyUnlock('${id}','coins')" ${canC?'':'disabled'}>${coinCost(cost)} 🪙</button></div>`;
-    return `<div class="shop-row ${owned?'owned':''}"><div class="ico">${ico}</div><div><b>${name}</b><small>${desc}</small></div>${btns}</div>`;
+    const owned = !!META.unlocked[id], can = (META.sp||0) >= cost;
+    return `<div class="shop-row ${owned?'owned':''}"><div class="ico">${ico}</div><div><b>${name}</b><small>${desc}</small></div><button class="shop-buy" onclick="buyUnlock('${id}')" ${(owned||!can)?'disabled':''}>${owned?'Owned':cost+' SP'}</button></div>`;
   };
   document.getElementById('shop-attacks').innerHTML = SHOP_ATTACKS.map(a=>row(a.id, a.ico, a.name, a.desc, a.cost)).join('');
   document.getElementById('shop-heroes').innerHTML = Object.values(HEROES).filter(h=>h.lockCost).map(h=>
     row(h.id, fighterBustSVG(lookFor(h, h.forms[0])), `${h.name} <span style="color:${h.color};font-weight:600;font-size:.75rem">${h.role}</span>`, `Own ${h.forms.length} transformations and the ${h.ultimate} ultimate. Power ${h.atk}, Defense ${h.def}.`, h.lockCost)).join('');
 }
-function buyUnlock(id, cur){
+function buyUnlock(id){
   if(META.unlocked[id]) return;
   const item = SHOP_ATTACKS.find(a=>a.id===id) || HEROES[id]; if(!item) return;
   const cost = item.cost || item.lockCost;
-  if(cur === 'coins'){ if((META.coins||0) < coinCost(cost)) return; META.coins -= coinCost(cost); }
-  else { if((META.sp||0) < cost) return; META.sp -= cost; }
-  META.unlocked[id] = 1; saveMeta();
+  if((META.sp||0) < cost) return;
+  META.sp -= cost; META.unlocked[id] = 1; saveMeta();
   sfx('win'); renderShop(); renderRoster(); refreshShopLabel();
 }
-function refreshShopLabel(){ const b = document.getElementById('shop-title-btn'); if(b) b.textContent = `⭐ Unlock Shop (${META.sp||0} SP · ${META.coins||0} 🪙)`; }
+function refreshShopLabel(){ const b = document.getElementById('shop-title-btn'); if(b) b.textContent = `⭐ Unlock Shop (${META.sp||0} SP)`; }
 setTimeout(refreshShopLabel, 0);
 
 /* ---- unlockable attacks (available to every warrior once bought) ---- */
@@ -2314,7 +2305,7 @@ function victoryFinal(){
   document.getElementById('end-text').textContent =
     `${state.player.def.name} has overcome every rival, ascending through every form of power, `+
     `and stands victorious as peace returns to the world. Your legend as a true Saiyan warrior is complete.`;
-  { const sp = 100 + (state.difficulty==='hard' ? 50 : 0); awardSP(sp); awardCoins(300); document.getElementById('end-text').textContent += ` You earned ${sp} unlock points (SP) and 300 coins — spend them in the Unlock Shop.`; }
+  { const sp = 100 + (state.difficulty==='hard' ? 50 : 0); awardSP(sp); document.getElementById('end-text').textContent += ` You earned ${sp} unlock points (SP) — spend them in the Unlock Shop.`; }
   goTo('end-screen');
 }
 
@@ -2327,7 +2318,7 @@ function gameOver2(){
   document.getElementById('end-text').textContent =
     `${state.player.def.name} falls in battle against ${state.enemy.def.name}. The story ends here — but every warrior `+
     `gets back up. Return to the title screen to try again.`;
-  { const sp = 10*(state.chapterIndex+1); awardSP(sp); const c = 15*(state.chapterIndex+1); awardCoins(c); document.getElementById('end-text').textContent += ` You still earned ${sp} unlock points (SP) and ${c} coins.`; }
+  { const sp = 10*(state.chapterIndex+1); awardSP(sp); document.getElementById('end-text').textContent += ` You still earned ${sp} unlock points (SP).`; }
   goTo('end-screen');
 }
 
