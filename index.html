@@ -256,6 +256,23 @@
   .pips{letter-spacing:2px;color:var(--ki-gold);font-size:.8rem;}
   .upg-buy{padding:6px 12px;border-radius:8px;border:1px solid var(--ki-gold);background:#141a30;color:var(--ki-gold);cursor:pointer;}
   .upg-buy:disabled{opacity:.35;cursor:default;}
+  .hero-card{position:relative;}
+  .hero-card.locked{opacity:.6;filter:grayscale(.6);padding-top:42px;}
+  .lock-tag{position:absolute;top:8px;left:8px;right:8px;text-align:center;font-size:.68rem;font-weight:800;color:var(--ki-gold);background:rgba(7,8,13,.85);border:1px solid var(--ki-gold);border-radius:6px;padding:3px;}
+  .shop-box{background:var(--panel);border:1px solid var(--panel-edge);border-radius:12px;padding:20px;max-width:640px;width:100%;max-height:92vh;overflow:auto;}
+  .shop-box h2{color:var(--ki-gold);margin:0 0 4px;text-align:center;}
+  .shop-box h3{color:var(--text-dim);font-size:.8rem;letter-spacing:2px;text-transform:uppercase;margin:16px 0 6px;}
+  .sp-bal{text-align:center;font-size:1.1rem;margin-bottom:6px;}
+  .sp-bal b{color:var(--ki-gold);}
+  .shop-row{display:flex;align-items:center;gap:12px;padding:10px 6px;border-bottom:1px solid var(--panel-edge);}
+  .shop-row .ico{width:44px;height:44px;border-radius:50%;overflow:hidden;background:#0b0d1c;border:1px solid var(--panel-edge);flex:none;display:flex;align-items:center;justify-content:center;font-size:1.4rem;}
+  .shop-row .ico svg{width:100%;height:100%;}
+  .shop-row>div:nth-child(2){flex:1;min-width:0;}
+  .shop-row small{display:block;color:var(--text-dim);font-size:.72rem;}
+  .shop-buy{padding:7px 12px;border-radius:8px;border:1px solid var(--ki-gold);background:#141a30;color:var(--ki-gold);cursor:pointer;white-space:nowrap;}
+  .shop-buy:disabled{opacity:.4;cursor:default;}
+  .shop-row.owned .shop-buy{border-color:#7dffb0;color:#7dffb0;}
+  .act-btn.solar{border-color:#fff0a0;color:#fff0a0;} .act-btn.senzu{border-color:#7dffb0;color:#7dffb0;} .act-btn.meteor{border-color:#ff9a5a;color:#ff9a5a;}
   .cam{position:absolute;inset:0;transform-origin:50% 80%;transition:transform .6s cubic-bezier(.3,.7,.3,1);will-change:transform;}
   .snd-btn{right:64px;}
   .decals{position:absolute;inset:0;pointer-events:none;}
@@ -405,6 +422,7 @@
     <div class="sub">A Warrior's Ascension</div>
     <button class="menu-btn" id="continue-btn" style="display:none" onclick="continueSave()">▶ Continue Journey</button>
     <button class="menu-btn" onclick="goTo('select-screen')">⚔ New Journey</button>
+    <button class="menu-btn" id="shop-title-btn" onclick="openShop()">⭐ Unlock Shop</button>
     <button class="menu-btn" onclick="showAchievements()">🏆 Achievements</button>
     <div class="ach-panel" id="ach-panel" style="display:none"></div>
     <button class="menu-btn" onclick="showHowTo()">📖 How To Play</button>
@@ -498,6 +516,18 @@
     </div>
   </div>
 
+  <!-- UNLOCK SHOP -->
+  <div class="screen" id="shop-screen">
+    <div class="shop-box">
+      <h2>Unlock Shop</h2>
+      <div class="sp-bal">Unlock points: <b id="sp-bal">0</b> SP</div>
+      <p class="section-desc" style="margin:0 0 4px;text-align:center;">Earn SP from every fight (more for a higher rank), achievements and finishing the story. Unlocks stay on this device.</p>
+      <h3>Attacks</h3><div id="shop-attacks"></div>
+      <h3>Characters</h3><div id="shop-heroes"></div>
+      <button class="menu-btn" onclick="location.reload()">Back</button>
+    </div>
+  </div>
+
   <!-- TRAINING / RESULTS -->
   <div class="screen" id="train-screen">
     <div class="train-box">
@@ -516,6 +546,7 @@
     <h2 class="section-title" id="end-title">Victory</h2>
     <p class="section-desc" id="end-text"></p>
     <button class="menu-btn" id="ng-btn" style="display:none" onclick="startNgPlus()">♾ New Game+ (harder enemies, keep upgrades)</button>
+    <button class="menu-btn" onclick="openShop()">⭐ Unlock Shop</button>
     <button class="menu-btn" onclick="location.reload()">Return to Title</button>
   </div>
 </div>
@@ -855,6 +886,11 @@ function setScene(key){
 
 // Each hero has a transformation ladder. Every form multiplies attack/defense, changes the UI accent
 // colour, and re-skins the character's art (hair, outfit, build, eyes). `suit` picks the costume style.
+/* Unlock points (SP) and unlocked attacks/characters persist between runs in this browser. */
+const META = loadJSON('sr-meta', {sp:0, unlocked:{}});
+if(!META.unlocked) META.unlocked = {};
+function saveMeta(){ saveJSON('sr-meta', META); }
+function heroLocked(h){ return !!h.lockCost && !META.unlocked[h.id]; }
 const HEROES = {
   goku: {
     id:'goku', name:'Goku', role:'Earth-Raised Saiyan', color:'#ff7a1a', letter:'G',
@@ -894,6 +930,34 @@ const HEROES = {
       {name:'Super Saiyan', threshold:45, mult:1.9, color:'#ffe14d', hairStyle:'spiky', hair:'#ffe14d', outfit:'#7a4fcf', accent:'#ff9a3f'},
       {name:'Super Saiyan 2', threshold:70, mult:2.6, color:'#fff59a', hairStyle:'spiky', hair:'#fff29a', outfit:'#7a4fcf', accent:'#ff9a3f'},
       {name:'Ultimate Gohan', threshold:100, mult:3.6, color:'#e9e9f5', hairStyle:'messy', hair:'#4a2f1f', outfit:'#e9e9f5', accent:'#ff7a1a', rage:true},
+    ]
+  },
+  tora: {
+    id:'tora', name:'Tora', role:'Storm Wanderer', color:'#3fe0ff', letter:'T', lockCost:300,
+    baseHP:125, baseKI:115, atk:19, def:11,
+    ultimate:'Thunder Lance', beam:'#ffe14d',
+    skin:'#b9794d', eyes:'#10202a', suit:'saiyan',
+    look:{pad:'#2a6f8f', gloves:'#9fe9ff', boots:'#9fe9ff'},
+    forms:[
+      {name:'Base Form', threshold:0, mult:1, color:'#3fe0ff', hairStyle:'long', hair:'#10303f', outfit:'#1b3a57', accent:'#3fe0ff'},
+      {name:'Storm Rush', threshold:25, mult:1.4, color:'#6fe3ff', hairStyle:'long', hair:'#6fe3ff', outfit:'#1b3a57', accent:'#3fe0ff'},
+      {name:'Tempest', threshold:55, mult:2.0, color:'#b8f1ff', hairStyle:'long', hair:'#c9f6ff', outfit:'#1b3a57', accent:'#6fe3ff', rage:true},
+      {name:'Thunder God', threshold:85, mult:2.9, color:'#fff6a8', hairStyle:'long', hair:'#fff6a8', outfit:'#23224f', accent:'#ffe14d'},
+      {name:'Sky Sovereign', threshold:100, mult:3.7, color:'#ffffff', hairStyle:'long', hair:'#ffffff', outfit:'#23224f', accent:'#ffe14d', noBrows:true}
+    ]
+  },
+  mira: {
+    id:'mira', name:'Mira', role:'Blade of Dawn', color:'#ffb347', letter:'M', lockCost:500,
+    baseHP:135, baseKI:105, atk:18, def:13,
+    ultimate:'Dawnbreaker Wave', beam:'#ffb347',
+    skin:'#e0a58a', eyes:'#3a1f1f', suit:'gi',
+    look:{headband:'#d4a017'},
+    forms:[
+      {name:'Base Form', threshold:0, mult:1, color:'#ffb347', hairStyle:'messy', hair:'#8e2b22', outfit:'#e8e8f0', accent:'#d4a017'},
+      {name:'Ember Focus', threshold:20, mult:1.3, color:'#ff8a47', hairStyle:'messy', hair:'#c0392b', outfit:'#e8e8f0', accent:'#d4a017', rage:true},
+      {name:'Dawn Blade', threshold:50, mult:1.9, color:'#ffc36b', hairStyle:'spiky', hair:'#ff9a47', outfit:'#e8e8f0', accent:'#d4a017'},
+      {name:'Solar Crown', threshold:80, mult:2.8, color:'#ffe08a', hairStyle:'spiky', hair:'#ffd36b', outfit:'#fff4d6', accent:'#e08a17'},
+      {name:'Daybreak', threshold:100, mult:3.6, color:'#fff2c2', hairStyle:'long', hair:'#fff2c2', outfit:'#fff4d6', accent:'#e08a17', noBrows:true}
     ]
   }
 };
@@ -1013,9 +1077,12 @@ function renderRoster(){
     const card = document.createElement('div');
     card.className='hero-card';
     card.id='card-'+h.id;
-    card.onclick=()=>selectHero(h.id);
+    const locked = heroLocked(h);
+    card.onclick=()=>{ if(locked) openShop(); else selectHero(h.id); };
+    if(locked) card.classList.add('locked');
     const baseForm = h.forms[0];
     card.innerHTML = `
+      ${locked ? `<div class="lock-tag">🔒 ${h.lockCost} SP · tap to unlock</div>` : ''}
       <div class="hero-badge">${fighterBustSVG(lookFor(h, baseForm))}</div>
       <h3>${h.name}</h3>
       <div class="role">${h.role}</div>
@@ -1030,6 +1097,7 @@ function renderRoster(){
   });
 }
 function selectHero(id){
+  if(heroLocked(HEROES[id])) return;
   state.heroId = id;
   document.querySelectorAll('.hero-card').forEach(c=>c.classList.remove('selected'));
   document.getElementById('card-'+id).classList.add('selected');
@@ -1102,6 +1170,7 @@ function setupBattle(){
   // clear cached art form-keys so the new enemy's art draws even if a form name repeats
   delete document.getElementById('e-portrait').dataset.form;
   delete document.getElementById('e-avatar').dataset.form;
+  state.player.cd = {}; state.player.senzuUsed = false;
   state.stats = {turns:0, damageTaken:0, maxCombo:0}; state.combo = {count:0, last:null}; state.lastKillKind = null;
   planEnemyMove();
 
@@ -1733,7 +1802,7 @@ function setDifficulty(d){
 }
 
 /* ---- combo meter: chaining different offensive moves builds a damage bonus; taking a hit resets it ---- */
-const OFFENSIVE = {attack:1, kiblast:1, barrage:1, ultimate:1};
+const OFFENSIVE = {attack:1, kiblast:1, barrage:1, ultimate:1, meteor:1};
 function comboMult(kind){
   const c = state.combo || {count:0,last:null};
   const n = OFFENSIVE[kind] ? (kind!==c.last ? c.count+1 : c.count) : c.count;
@@ -1792,7 +1861,7 @@ function achieve(id){
   ACH_DONE[id] = 1; saveJSON('sr-ach', ACH_DONE);
   let t = document.getElementById('toast');
   if(!t){ t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
-  const n = document.createElement('div'); n.className = 'toast-item'; n.innerHTML = `🏆 <b>${ACHS[id][0]}</b><small>${ACHS[id][1]}</small>`;
+  const n = document.createElement('div'); n.className = 'toast-item'; n.innerHTML = `🏆 <b>${ACHS[id][0]}</b><small>${ACHS[id][1]} · +20 SP</small>`; awardSP(20);
   t.appendChild(n); setTimeout(()=>n.remove(), 3600); sfx('win');
 }
 function showAchievements(){
@@ -1815,19 +1884,20 @@ function gradeFight(){
   if(st.turns <= par && dmgPct < .25) rank = 'S'; else if(st.turns <= par+4 && dmgPct < .55) rank = 'A'; else if(dmgPct < .9) rank = 'B';
   const pts = 2 + ({S:2, A:1, B:0, C:0})[rank];
   state.points += pts;
+  const sp = 25 + ch*5 + ({S:40, A:25, B:10, C:0})[rank]; awardSP(sp);
   PROF.fights++; PROF.wins++; if(rank==='S') PROF.s++; PROF.best = Math.max(PROF.best, st.maxCombo); saveJSON('sr-prof', PROF);
   achieve('first_win');
   if(st.damageTaken === 0) achieve('untouchable');
   if(p.hp/p.maxHp < .15) achieve('clutch');
   if(rank === 'S') achieve('srank');
   if(state.lastKillKind === 'ultimate') achieve('finisher');
-  return {rank, pts, par, turns:st.turns, dmg:st.damageTaken, combo:st.maxCombo};
+  return {rank, pts, sp, par, turns:st.turns, dmg:st.damageTaken, combo:st.maxCombo};
 }
 function showTraining(res){
   state.phase = 'train';
   const hr = document.getElementById('tr-rank'); hr.textContent = res.rank; hr.className = 'rank-letter r'+res.rank;
   document.getElementById('tr-stats').innerHTML =
-    `<div><b>${res.turns}</b><small>turns (par ${res.par})</small></div><div><b>${res.dmg}</b><small>damage taken</small></div><div><b>${res.combo}</b><small>best combo</small></div><div><b>+${res.pts}</b><small>training points</small></div>`;
+    `<div><b>${res.turns}</b><small>turns (par ${res.par})</small></div><div><b>${res.dmg}</b><small>damage taken</small></div><div><b>${res.combo}</b><small>best combo</small></div><div><b>+${res.pts}</b><small>training points</small></div><div><b>+${res.sp}</b><small>unlock points (SP)</small></div>`;
   renderTraining();
   goTo('train-screen');
 }
@@ -1867,6 +1937,46 @@ function startNgPlus(){
 }
 setTimeout(refreshContinue, 0);
 
+/* ---- unlock shop: attacks and characters bought with SP ---- */
+const SHOP_ATTACKS = [
+  {id:'solar',  name:'Solar Flare',   ico:'☀', cost:120, desc:'Blinds and stuns the enemy for a turn (15 Ki, 3-turn cooldown). Key X.'},
+  {id:'senzu',  name:'Senzu Bean',    ico:'🫘', cost:180, desc:'Restores 35% of your HP, once per fight. Key C.'},
+  {id:'meteor', name:'Meteor Strike', ico:'☄', cost:260, desc:'Heavy dive-bomb for 2.3x damage (25 Ki, 2-turn cooldown). Key V.'}
+];
+function awardSP(n){ META.sp = (META.sp||0) + n; saveMeta(); }
+function openShop(){ renderShop(); goTo('shop-screen'); }
+function renderShop(){
+  document.getElementById('sp-bal').textContent = META.sp || 0;
+  const row = (id, ico, name, desc, cost)=>{
+    const owned = !!META.unlocked[id], can = (META.sp||0) >= cost;
+    return `<div class="shop-row ${owned?'owned':''}"><div class="ico">${ico}</div><div><b>${name}</b><small>${desc}</small></div><button class="shop-buy" onclick="buyUnlock('${id}')" ${(owned||!can)?'disabled':''}>${owned?'Owned':cost+' SP'}</button></div>`;
+  };
+  document.getElementById('shop-attacks').innerHTML = SHOP_ATTACKS.map(a=>row(a.id, a.ico, a.name, a.desc, a.cost)).join('');
+  document.getElementById('shop-heroes').innerHTML = Object.values(HEROES).filter(h=>h.lockCost).map(h=>
+    row(h.id, fighterBustSVG(lookFor(h, h.forms[0])), `${h.name} <span style="color:${h.color};font-weight:600;font-size:.75rem">${h.role}</span>`, `Own ${h.forms.length} transformations and the ${h.ultimate} ultimate. Power ${h.atk}, Defense ${h.def}.`, h.lockCost)).join('');
+}
+function buyUnlock(id){
+  if(META.unlocked[id]) return;
+  const item = SHOP_ATTACKS.find(a=>a.id===id) || HEROES[id]; if(!item) return;
+  const cost = item.cost || item.lockCost;
+  if((META.sp||0) < cost) return;
+  META.sp -= cost; META.unlocked[id] = 1; saveMeta();
+  sfx('win'); renderShop(); renderRoster(); refreshShopLabel();
+}
+function refreshShopLabel(){ const b = document.getElementById('shop-title-btn'); if(b) b.textContent = `⭐ Unlock Shop (${META.sp||0} SP)`; }
+setTimeout(refreshShopLabel, 0);
+
+/* ---- unlockable attacks (available to every warrior once bought) ---- */
+function extraButtons(){
+  const p = state.player, locked = state.turnLock, cd = k=>(p.cd && p.cd[k]) || 0;
+  let h = '';
+  if(META.unlocked.solar)  h += `<button class="act-btn solar" onclick="doAction('solar')" ${(locked||p.ki<15||cd('solar')>0)?'disabled':''} title="Blind and stun the enemy · 15 Ki · 3-turn cooldown">☀ Solar Flare${cd('solar')>0?' ('+cd('solar')+')':''} <small>[X]</small></button>`;
+  if(META.unlocked.meteor) h += `<button class="act-btn meteor" onclick="doAction('meteor')" ${(locked||p.ki<25||cd('meteor')>0)?'disabled':''} title="Heavy dive-bomb · 25 Ki · 2-turn cooldown">☄ Meteor Strike${cd('meteor')>0?' ('+cd('meteor')+')':''} <small>[V]</small></button>`;
+  if(META.unlocked.senzu)  h += `<button class="act-btn senzu" onclick="doAction('senzu')" ${(locked||p.senzuUsed||p.hp>=p.maxHp)?'disabled':''} title="Restore 35% HP · once per fight">🫘 Senzu${p.senzuUsed?' (used)':''} <small>[C]</small></button>`;
+  return h;
+}
+
+
 function toggleFullscreen(){
   try{
     if(!document.fullscreenElement){
@@ -1890,6 +2000,7 @@ function renderActions(){
     <button class="act-btn" onclick="doAction('kiblast')" ${locked?'disabled':''}>🔵 Ki Blast <small>[W]</small></button>
     <button class="act-btn" onclick="doAction('barrage')" ${(locked||!barrageUnlocked()||state.player.ki<20)?'disabled':''} title="4 rapid hits · costs 20 Ki">${barrageUnlocked()?'💫 Barrage <small>[B]</small>':'🔒 Barrage <small>(ch. 2)</small>'}</button>
     <button class="act-btn guard" onclick="doAction('guard')" ${locked?'disabled':''} title="Take 60% less damage; guarding a strike counters and stuns">🛡 Guard <small>[G]</small></button>
+    ${extraButtons()}
     <button class="act-btn transform" onclick="doAction('focus')" ${locked?'disabled':''}>✨ Focus Ki <small>[E]</small></button>
     <button class="act-btn ultimate" onclick="doAction('ultimate')" ${(locked||!canUltimate)?'disabled':''}>💥 ${state.player.def.ultimate} <small>[F]</small></button>
     <button class="act-btn dodge" onclick="doAction('dodge')" ${(locked || !state.player.flying || state.player.dodgeCooldown>0 || state.player.ki<DODGE_KI_COST)?'disabled':''} title="Airborne only · costs ${DODGE_KI_COST} Ki · the next enemy attack misses · every other turn">🌀 Dodge${state.player.dodgeCooldown>0?' ('+state.player.dodgeCooldown+')':''} <small>[R]</small></button>
@@ -1911,6 +2022,7 @@ function logMsg(text, cls){
 const DODGE_KI_COST = 6;
 function doAction(kind){
   if(state.turnLock || state.phase!=='battle') return;
+  if(({solar:1,senzu:1,meteor:1})[kind] && !META.unlocked[kind]) return;
   state.turnLock = true;
   renderActions(); // grey out all buttons the instant any action is taken
   const p = state.player, e = state.enemy;
@@ -1951,6 +2063,31 @@ function doAction(kind){
     p.dodgeCooldown = 2; // counts down once per enemy turn -> usable every other turn
     logMsg(`${p.def.name} readies an evasive dash — the next attack won't land!`, 'player-line');
     caption('EVASIVE STANCE!');
+  } else if(kind==='solar'){
+    p.cd = p.cd || {};
+    if(p.ki < 15 || p.cd.solar > 0){ logMsg(p.cd.solar>0 ? 'Solar Flare is still recharging.' : 'Not enough Ki for Solar Flare (needs 15).', 'sys-line'); state.turnLock=false; renderActions(); return; }
+    p.ki -= 15; p.cd.solar = 4;
+    const dmg = Math.max(2, Math.round(p.def.atk*.8*pForm.mult*pMult - e.def.def*.3));
+    e.hp -= dmg; e.stunned = true;
+    logMsg(`☀ ${p.def.name} unleashes a Solar Flare — ${e.def.name} is blinded and stunned! (${dmg} damage)`, 'player-line');
+    caption('SOLAR FLARE!'); flash(.9,.6); fireOrb('player');
+    setTimeout(()=>{ hitFlash('enemy'); popDamage('enemy','-'+dmg); const q = fighterPoint('enemy',.4); fxRing(q.x,q.y,'#fff0a0',140); fxSpark(q.x,q.y,'#fff0a0',40,6,600); }, 460);
+  } else if(kind==='senzu'){
+    if(p.senzuUsed || p.hp >= p.maxHp){ logMsg(p.senzuUsed ? 'You already ate your Senzu Bean this fight.' : 'You are already at full health.', 'sys-line'); state.turnLock=false; renderActions(); return; }
+    p.senzuUsed = true;
+    const heal = Math.min(p.maxHp - p.hp, Math.round(p.maxHp*.35)); p.hp += heal;
+    logMsg(`🫘 ${p.def.name} crunches a Senzu Bean and recovers ${heal} HP!`, 'player-line');
+    caption('SENZU BEAN!'); sfx('win'); popDamage('player','+'+heal,'heal');
+    { const q = fighterPoint('player',.5); fxRing(q.x,q.y,'#7dffb0',90); fxSpark(q.x,q.y,'#7dffb0',30,3,700); }
+  } else if(kind==='meteor'){
+    p.cd = p.cd || {};
+    if(p.ki < 25 || p.cd.meteor > 0){ logMsg(p.cd.meteor>0 ? 'Meteor Strike is still recharging.' : 'Not enough Ki for Meteor Strike (needs 25).', 'sys-line'); state.turnLock=false; renderActions(); return; }
+    p.ki -= 25; p.cd.meteor = 3;
+    let dmg = Math.max(6, Math.round(p.def.atk*2.3*pForm.mult*pMult - e.def.def*.4 + rnd(-2,5)));
+    const adj = traitAdjust(e, 'melee', dmg); dmg = adj.d; e.hp -= dmg;
+    logMsg(`☄ ${p.def.name} crashes down like a meteor ${dmg>0?`for ${dmg} damage!`:'but only hits an afterimage!'}`, 'player-line');
+    caption('METEOR STRIKE!'); lunge('player'); setPose('player','kick',600); afterimages('player',4,'#ff9a5a');
+    setTimeout(()=>{ if(adj.evaded) popDamage('enemy','EVADED','miss'); else { hitFlash('enemy', true); popDamage('enemy','-'+dmg); shakeArena(); } }, 300);
   } else if(kind==='guard'){
     p.guarding = true; p.ki = Math.min(p.maxKi, p.ki + 8);
     logMsg(`${p.def.name} braces for impact — ready to counter! (+8 Ki)`, 'player-line');
@@ -2048,6 +2185,7 @@ function enemyTurn(){
   p.dodgeArmed = false;
   if(p.dodgeCooldown > 0) p.dodgeCooldown--;
   const armedGuard = !!p.guarding; p.guarding = false;
+  if(p.cd){ for(const k in p.cd){ if(p.cd[k] > 0) p.cd[k]--; } }
   if(e.stunned){
     e.stunned = false;
     logMsg(`${e.def.name} is stunned and can't act!`, 'player-line'); caption('STUNNED!'); setPose('enemy','hit',600); sfx('block');
@@ -2167,6 +2305,7 @@ function victoryFinal(){
   document.getElementById('end-text').textContent =
     `${state.player.def.name} has overcome every rival, ascending through every form of power, `+
     `and stands victorious as peace returns to the world. Your legend as a true Saiyan warrior is complete.`;
+  { const sp = 100 + (state.difficulty==='hard' ? 50 : 0); awardSP(sp); document.getElementById('end-text').textContent += ` You earned ${sp} unlock points (SP) — spend them in the Unlock Shop.`; }
   goTo('end-screen');
 }
 
@@ -2179,6 +2318,7 @@ function gameOver2(){
   document.getElementById('end-text').textContent =
     `${state.player.def.name} falls in battle against ${state.enemy.def.name}. The story ends here — but every warrior `+
     `gets back up. Return to the title screen to try again.`;
+  { const sp = 10*(state.chapterIndex+1); awardSP(sp); document.getElementById('end-text').textContent += ` You still earned ${sp} unlock points (SP).`; }
   goTo('end-screen');
 }
 
@@ -2308,7 +2448,7 @@ function toggleFly(){
 const KEY_TO_DIR = { arrowup:'up', arrowdown:'down', arrowright:'fwd', arrowleft:'back' };
 // Action hotkeys: Q strike · W ki blast · E focus ki · R dodge (in the air) · F ultimate
 const KEY_TO_ACTION = { q:'attack', keyq:'attack', w:'kiblast', keyw:'kiblast', e:'focus', keye:'focus',
-                        r:'dodge', keyr:'dodge', f:'ultimate', keyf:'ultimate', g:'guard', keyg:'guard', b:'barrage', keyb:'barrage' };
+                        r:'dodge', keyr:'dodge', f:'ultimate', keyf:'ultimate', g:'guard', keyg:'guard', b:'barrage', keyb:'barrage', x:'solar', keyx:'solar', c:'senzu', keyc:'senzu', v:'meteor', keyv:'meteor' };
 function dirForKey(e){
   return KEY_TO_DIR[String(e.key||'').toLowerCase()] || KEY_TO_DIR[String(e.code||'').toLowerCase()] || null;
 }
