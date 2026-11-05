@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Saiyan Rising — A Warrior's Ascension</title>
 <style>
   :root{
@@ -22,6 +22,8 @@
   *{box-sizing:border-box;}
   html,body{margin:0;height:100%;background:var(--void);color:var(--text);
     font-family:'Trebuchet MS',Verdana,sans-serif;overflow:hidden;}
+  button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+  .hero-card{touch-action:manipulation;}
   #app{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;}
 
   /* ---------- Starfield / energy backdrop ---------- */
@@ -41,14 +43,20 @@
     border-bottom-width:2px;border-radius:4px;background:#101528;color:var(--text);font:inherit;font-weight:700;}
   @media (hover:none){ .controls-hint{display:none;} }
 
-  .joystick{position:fixed;left:18px;bottom:18px;z-index:25;display:none;touch-action:none;user-select:none;-webkit-user-select:none;}
+  .joystick{position:fixed;left:calc(18px + env(safe-area-inset-left));bottom:calc(18px + env(safe-area-inset-bottom));z-index:25;display:none;touch-action:none;user-select:none;-webkit-user-select:none;}
   body.touch.in-battle .joystick{display:block;}
   /* touch layout: arena on top, joystick bottom-left, compact action buttons bottom-right */
-  body.touch #battle-screen{padding-bottom:230px;}
+  body.touch #battle-screen{padding-bottom:calc(230px + env(safe-area-inset-bottom));}
   body.touch .stage{--stageH:clamp(220px,36vh,520px);}
-  body.touch .action-grid{position:fixed;left:176px;right:12px;bottom:14px;z-index:24;margin:0;
-    grid-template-columns:repeat(2,1fr);gap:6px;}
-  body.touch .act-btn{padding:9px 4px;font-size:.78rem;}
+  /* max-height + scroll is a safety net: with every attack unlocked this grid can out-grow the
+     reserved space below, and since the page itself can't scroll those buttons would otherwise
+     be stranded off-screen on short/landscape phones. */
+  body.touch .action-grid{position:fixed;left:calc(176px + env(safe-area-inset-left));right:calc(12px + env(safe-area-inset-right));bottom:calc(14px + env(safe-area-inset-bottom));z-index:24;margin:0;
+    grid-template-columns:repeat(2,1fr);gap:6px;max-height:min(260px,58vh);overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  body.touch .act-btn{padding:9px 4px;font-size:.78rem;min-height:40px;}
+  @media (orientation:landscape) and (min-width:560px){
+    body.touch .action-grid{grid-template-columns:repeat(3,1fr);}
+  }
   .act-btn small{opacity:.55;font-size:.7em;font-weight:600;}
   body.touch .act-btn small{display:none;}
   body.touch .vs-mid, body.touch .controls-hint{display:none;}
@@ -66,7 +74,7 @@
   .joy-dir.down{bottom:6px;left:50%;transform:translateX(-50%);}
   .joy-dir.back{left:8px;top:50%;transform:translateY(-50%);}
   .joy-dir.fwd{right:8px;top:50%;transform:translateY(-50%);}
-  .fs-btn{position:fixed;top:12px;right:14px;z-index:30;width:42px;height:42px;border-radius:10px;
+  .fs-btn{position:fixed;top:calc(12px + env(safe-area-inset-top));right:calc(14px + env(safe-area-inset-right));z-index:30;width:42px;height:42px;border-radius:10px;
     border:1px solid var(--panel-edge);background:rgba(13,17,32,.85);color:var(--text);font-size:1.25rem;
     cursor:pointer;transition:.15s;}
   .fs-btn:hover{border-color:var(--ki-gold);color:var(--ki-gold);}
@@ -275,7 +283,7 @@
   .shop-row.owned .shop-buy{border-color:#7dffb0;color:#7dffb0;}
   .act-btn.solar{border-color:#fff0a0;color:#fff0a0;} .act-btn.senzu{border-color:#7dffb0;color:#7dffb0;} .act-btn.meteor{border-color:#ff9a5a;color:#ff9a5a;}
   .cam{position:absolute;inset:0;transform-origin:50% 80%;transition:transform .6s cubic-bezier(.3,.7,.3,1);will-change:transform;}
-  .snd-btn{right:64px;}
+  .snd-btn{right:calc(64px + env(safe-area-inset-right));}
   .decals{position:absolute;inset:0;pointer-events:none;}
   .decal{position:absolute;animation:decalIn .35s ease-out both;}
   .decal svg{width:100%;height:100%;display:block;overflow:visible;}
@@ -358,8 +366,11 @@
   }
 
   .stage.shake{animation:arenaShake .35s;}
-  @keyframes arenaShake{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}
-    50%{transform:translateX(6px);}75%{transform:translateX(-4px);}}
+  @keyframes arenaShake{0%,100%{transform:translate(0,0);}
+    20%{transform:translate(calc(-6px * var(--shakeMag,1)),calc(2px * var(--shakeMag,1)));}
+    40%{transform:translate(calc(6px * var(--shakeMag,1)),calc(-3px * var(--shakeMag,1)));}
+    60%{transform:translate(calc(-4px * var(--shakeMag,1)),calc(2px * var(--shakeMag,1)));}
+    80%{transform:translate(calc(3px * var(--shakeMag,1)),calc(-1px * var(--shakeMag,1)));}}
 
   #log{height:clamp(64px,10vh,110px);overflow-y:auto;background:#080a14;border:1px solid var(--panel-edge);border-radius:8px;
     padding:6px 12px;font-size:.85rem;line-height:1.45;margin-bottom:10px;}
@@ -1306,9 +1317,14 @@ function caption(text){
   c.classList.add('show');
   setTimeout(()=>c.classList.remove('show'), 700);
 }
-function shakeArena(){
+function shakeArena(mag){
   const a = document.getElementById('stage');
+  a.style.setProperty('--shakeMag', mag || 1);
   a.classList.remove('shake'); void a.offsetWidth; a.classList.add('shake');
+}
+// Short device buzz on supporting browsers (mainly Android Chrome — iOS Safari has no Vibration API).
+function haptic(pattern){
+  try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){}
 }
 /* Positions below are measured from the live fighters, so effects line up whether
    a fighter is on the ground or in the air and at any window size. */
@@ -1343,6 +1359,8 @@ function hitFlash(targetSide, big){
   impactFx(targetSide, big);
   sfx(big ? 'heavy' : 'hit'); camPunch(big ? .07 : .025);
   if(big) addDecal(targetSide,'crater'); else if(Math.random() < .3) addDecal(targetSide,'scorch');
+  // feedback always plays on the player's own device, whichever fighter got hit
+  haptic(targetSide==='player' ? (big ? [0,55,40,85] : 22) : (big ? 30 : 10));
 }
 function lunge(attackerSide){
   const stage = document.getElementById('stage');
@@ -1488,9 +1506,10 @@ function impactFx(side, big){
   const attacker = side==='enemy' ? 'player' : 'enemy';
   const col = beamColor(attacker);
   const pt = fighterPoint(side, 0.42);
-  fxSpark(pt.x, pt.y, col, big?46:20, big?6:4, 600);
-  fxSpark(pt.x, pt.y, '#ffffff', big?14:7, big?7:5, 350);
-  fxRing(pt.x, pt.y, col, big?150:80);
+  fxSpark(pt.x, pt.y, col, big?64:20, big?7:4, 650);
+  fxSpark(pt.x, pt.y, '#ffffff', big?22:7, big?8:5, 380);
+  fxRing(pt.x, pt.y, col, big?170:80);
+  if(big){ fxRing(pt.x, pt.y, '#fff', 95); flash(.22, .32); }
   hitStop(big?130:65);
 }
 function hitStop(ms){
@@ -1656,7 +1675,8 @@ function transformSeq(side){
     const pt = fighterPoint(side, .45);
     [0,110,230].forEach((t,i)=>setTimeout(()=>fxRing(pt.x, pt.y, form.color, 120+i*70), t));
     fxSpark(pt.x, pt.y, form.color, 60, 6, 800); fxSpark(pt.x, pt.y, '#fff', 20, 8, 500);
-    addDecal(side, 'crater'); hitStop(110); shakeArena(); camPunch(.08);
+    addDecal(side, 'crater'); hitStop(110); shakeArena(1.6); camPunch(.08);
+    if(side==='player') haptic([0,40,50,60]);
   }, 700);
   setTimeout(()=>camRelease(), 1600);
 }
@@ -1686,7 +1706,8 @@ function cinematicUltimate(dmg){
   }, 960);
   setTimeout(()=>{
     state.holdEnemyHp = null; renderBattle();
-    hitFlash('enemy', true); popDamage('enemy', '-'+dmg); shakeArena(); flash(.9, .8); addDecal('enemy', 'crater'); camPunch(.1);
+    hitFlash('enemy', true); popDamage('enemy', '-'+dmg); shakeArena(2.2); flash(.9, .8); addDecal('enemy', 'crater'); camPunch(.1);
+    haptic([0,70,50,110,40,60]);
   }, 960 + 600);
   setTimeout(()=>{ cine.classList.remove('on'); dim.classList.remove('on'); cine.innerHTML = ''; camRelease(); }, 960 + 600 + 650);
 }
@@ -2117,7 +2138,7 @@ function doAction(kind){
     const adj = traitAdjust(e, 'melee', dmg); dmg = adj.d; e.hp -= dmg;
     logMsg(`☄ ${p.def.name} crashes down like a meteor ${dmg>0?`for ${dmg} damage!`:'but only hits an afterimage!'}`, 'player-line');
     caption('METEOR STRIKE!'); lunge('player'); setPose('player','kick',600); afterimages('player',4,'#ff9a5a');
-    setTimeout(()=>{ if(adj.evaded) popDamage('enemy','EVADED','miss'); else { hitFlash('enemy', true); popDamage('enemy','-'+dmg); shakeArena(); } }, 300);
+    setTimeout(()=>{ if(adj.evaded) popDamage('enemy','EVADED','miss'); else { hitFlash('enemy', true); popDamage('enemy','-'+dmg); shakeArena(1.6); } }, 300);
   } else if(kind==='surge'){
     p.cd = p.cd || {};
     if(p.ki < 20 || p.cd.surge > 0 || p.surge){ logMsg(p.surge ? 'Power Surge is already charged.' : p.cd.surge>0 ? 'Power Surge is recharging.' : 'Not enough Ki for Power Surge (needs 20).', 'sys-line'); state.turnLock=false; renderActions(); return; }
