@@ -522,7 +522,7 @@
     <div class="shop-box">
       <h2>Unlock Shop</h2>
       <div class="sp-bal">Unlock points: <b id="sp-bal">0</b> SP</div>
-      <p class="section-desc" style="margin:0 0 4px;text-align:center;">Earn SP from every fight (more for a higher rank), achievements and finishing the story (every fight win pays 300,000 SP). Unlocks stay on this device.</p>
+      <p class="section-desc" style="margin:0 0 4px;text-align:center;">Earn SP from every fight (more for a higher rank), achievements and finishing the story (every fight win pays 40 SP). Unlocks stay on this device.</p>
       <h3>Attacks</h3><div id="shop-attacks"></div>
       <h3>Perks</h3><div id="shop-perks"></div>
       <h3>Auras</h3><div id="shop-auras"></div>
@@ -1888,7 +1888,7 @@ function gradeFight(){
   if(st.turns <= par && dmgPct < .25) rank = 'S'; else if(st.turns <= par+4 && dmgPct < .55) rank = 'A'; else if(dmgPct < .9) rank = 'B';
   const pts = 2 + ({S:2, A:1, B:0, C:0})[rank];
   state.points += pts;
-  const sp = 300000; awardSP(sp);
+  const sp = 40; awardSP(sp);
   PROF.fights++; PROF.wins++; if(rank==='S') PROF.s++; PROF.best = Math.max(PROF.best, st.maxCombo); saveJSON('sr-prof', PROF);
   achieve('first_win');
   if(st.damageTaken === 0) achieve('untouchable');
